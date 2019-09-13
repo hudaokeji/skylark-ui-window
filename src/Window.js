@@ -1,22 +1,16 @@
-/**
- * skylark-ui-window - The skylark window widget
- * @author Hudaokeji, Inc.
- * @version v0.9.0
- * @link https://github.com/skylarkui/skylark-ui-window/
- * @license MIT
- */
 define([
-  "skylark-utils/langx",
-  "skylark-utils/browser",
-  "skylark-utils/datax",
-  "skylark-utils/eventer",
-  "skylark-utils/noder",
-  "skylark-utils/geom",
-  "skylark-utils/velm",
-  "skylark-utils/query",
-  "skylark-utils-interact/mover",
-  "skylark-ui-swt/sbswt"
-],function(langx,browser,datax,eventer,noder,geom,velm,$,mover,sbswt){
+  "skylark-langx/skylark",
+  "skylark-langx/langx",
+  "skylark-utils-dom/browser",
+  "skylark-utils-dom/datax",
+  "skylark-utils-dom/eventer",
+  "skylark-utils-dom/noder",
+  "skylark-utils-dom/geom",
+  "skylark-utils-dom/elmx",
+  "skylark-utils-dom/query",
+  "skylark-domx-interact/Movable",
+  "skylark-widgets-swt/Widget"
+],function(skylark,langx,browser,datax,eventer,noder,geom,velm,$,Movable,Widget){
 
 
 /*----------------------------------------------------------------------*/
@@ -45,7 +39,7 @@ define([
     */
     var namespace = 'bsw';
 
-    var Window = sbswt.Window = sbswt.WidgetBase.inherit({
+    var Window = Widget.inherit({
         klassName: "Window",
 
         init : function(element,options) {
@@ -370,7 +364,7 @@ define([
                 _this.restore();
             });
 
-            this.moveable = mover.movable(this.$el[0],{
+            this.moveable = Movable(this.$el[0],{
                 handle : this.options.elements.title[0]
             });
 
@@ -800,11 +794,7 @@ define([
     });
 
 
-/*----------------------------------------------------------------------*/
-    langx.mixin(sbswt,{
-        Window : Window,
-        WindowManager : WindowManager
-    });
+    Window.WindowManager = WindowManager;
 
-    return $.fn.window;
+    return skylark.attach("widgets.WIndow",Window);
 });

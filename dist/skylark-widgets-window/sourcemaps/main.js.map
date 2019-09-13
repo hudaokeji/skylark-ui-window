@@ -1,0 +1,1 @@
+{"version":3,"sources":["main.js"],"names":["define","Window"],"mappings":";;;;;;;AAAAA,QACI,YACD,SAASC,GACR,OAAOA","file":"../main.js","sourcesContent":["define([\r\n    \"./Window\"\r\n], function(Window) {\r\n    return Window;\r\n});"]}
