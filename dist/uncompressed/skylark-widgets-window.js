@@ -96,9 +96,9 @@ define('skylark-widgets-window/Window',[
   "skylark-utils-dom/geom",
   "skylark-utils-dom/elmx",
   "skylark-utils-dom/query",
-  "skylark-domx-interact/Movable",
-  "skylark-widgets-swt/Widget"
-],function(skylark,langx,browser,datax,eventer,noder,geom,velm,$,Movable,Widget){
+  "skylark-widgets-swt/Widget",  
+  "skylark-domx-interact/Movable"
+],function(skylark,langx,browser,datax,eventer,noder,geom,velm,$,Widget,Movable){
 
 
 /*----------------------------------------------------------------------*/
@@ -127,7 +127,7 @@ define('skylark-widgets-window/Window',[
     */
     var namespace = 'bsw';
 
-    var Window = Widget.inherit({
+    var Window =  Widget.inherit({
         klassName: "Window",
 
         init : function(element,options) {
@@ -452,7 +452,7 @@ define('skylark-widgets-window/Window',[
                 _this.restore();
             });
 
-            this.moveable = Movable(this.$el[0],{
+            this.moveable = new Movable(this.$el[0],{
                 handle : this.options.elements.title[0]
             });
 
@@ -884,7 +884,7 @@ define('skylark-widgets-window/Window',[
 
     Window.WindowManager = WindowManager;
 
-    return skylark.attach("widgets.WIndow",Window);
+    return skylark.attach("widgets.Window",Window);
 });
 define('skylark-widgets-window/main',[
     "./Window"

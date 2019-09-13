@@ -3,13 +3,9 @@
   "description": "The skylark window widget",
   "version": "0.9.0",
   "keywords": [
-    "css",
-    "less",
-    "mobile-first",
-    "responsive",
-    "front-end",
-    "framework",
-    "web"
+    "skylark",
+    "ui",
+    "window"
   ],
   "homepage": "https://github.com/skylark-widgets/skylark-widgets-window/",
   "author": "Hudaokeji, Inc.",
