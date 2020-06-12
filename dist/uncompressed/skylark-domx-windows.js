@@ -1,8 +1,8 @@
 /**
- * skylark-widgets-window - The skylark window widget
+ * skylark-domx-windows - The skylark windows plugin library
  * @author Hudaokeji, Inc.
  * @version v0.9.0
- * @link https://github.com/skylark-widgets/skylark-widgets-window/
+ * @link https://github.com/skylark-widgets/skylark-domx-windows/
  * @license MIT
  */
 (function(factory,globals) {
@@ -75,7 +75,7 @@
   factory(define,require);
 
   if (!isAmd) {
-    var skylarkjs = require("skylark-langx/skylark");
+    var skylarkjs = require("skylark-langx-ns");
 
     if (isCmd) {
       module.exports = skylarkjs;
@@ -86,82 +86,70 @@
 
 })(function(define,require) {
 
-define('skylark-widgets-window/Window',[
+define('skylark-domx-windows/windows',[
+	"skylark-langx-ns"
+],function(skylark){
+	return skylark.attach("domx.windows",{
+	});
+});
+define('skylark-domx-windows/Window',[
   "skylark-langx/skylark",
   "skylark-langx/langx",
-  "skylark-utils-dom/browser",
-  "skylark-utils-dom/datax",
-  "skylark-utils-dom/eventer",
-  "skylark-utils-dom/noder",
-  "skylark-utils-dom/geom",
-  "skylark-utils-dom/elmx",
-  "skylark-utils-dom/query",
-  "skylark-widgets-swt/Widget",  
-  "skylark-domx-interact/Movable"
-],function(skylark,langx,browser,datax,eventer,noder,geom,velm,$,Widget,Movable){
+  "skylark-domx-browser",
+  "skylark-domx-data",
+  "skylark-domx-eventer",
+  "skylark-domx-noder",
+  "skylark-domx-geom",
+  "skylark-domx-velm",
+  "skylark-domx-query",
+  "skylark-domx-plugins",  
+  "skylark-domx-interact/Movable",
+  "./windows",  
+],function(skylark,langx,browser,datax,eventer,noder,geom,velm,$,plugins,Movable,windows){
 
 
-/*----------------------------------------------------------------------*/
-    /*
-    https://github.com/earmbrust/bootstrap-window
-
-    Copyright (c) 2013-2015 Elden Armbrust
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in
-    all copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-    THE SOFTWARE.
-    */
     var namespace = 'bsw';
 
-    var Window =  Widget.inherit({
-        klassName: "Window",
 
-        init : function(element,options) {
-            options = options || {};
-            var defaults = {
-                selectors: {
-                    handle: '.window-header',
-                    title: '.window-title',
-                    body: '.window-body',
-                    footer: '.window-footer'
-                },
-                elements: {
-                    handle: null,
-                    title: null,
-                    body: null,
-                    footer: null
-                },
-                references: {
-                    body: $('body'),
-                    window: $(window)
-                },
-                effect: 'fade',
-                parseHandleForTitle: true,
-                maximized: false,
-                maximizable: false,
-                title: 'No Title',
-                bodyContent: '',
-                footerContent: ''
-            };
-            options = this.options = langx.mixin({}, defaults, options,true);
+    var Window = plugins.Plugin.inherit({
+        klassName : "Window",
+
+        pluginName : "domx.window",
+
+        options : {
+            selectors: {
+                handle: '.window-header',
+                title: '.window-title',
+                body: '.window-body',
+                footer: '.window-footer'
+            },
+            elements: {
+                handle: null,
+                title: null,
+                body: null,
+                footer: null
+            },
+            references: {
+                body: $('body'),
+                window: $(window)
+            },
+            effect: 'fade',
+            parseHandleForTitle: true,
+            maximized: false,
+            maximizable: false,
+            title: 'No Title',
+            bodyContent: '',
+            footerContent: ''
+        },
+
+        _construct : function(elm,options) {
+            this.overrided(elm,options);
+
+            options = this.options;
 
             var _this = this;
 
-            this.$el = $(element);
+            this.$el = this.$();
 
             if (!this.$el.hasClass('window')) {
                 this.$el.addClass('window');
@@ -171,6 +159,7 @@ define('skylark-widgets-window/Window',[
             if (this.$el.find(options.selectors.handle).length <= 0) {
                 this.$el.prepend('<div class="window-header"><h4 class="window-title"></h4></div>');
             }
+
 
             options.elements.handle = this.$el.find(options.selectors.handle);
             options.elements.title = this.$el.find(options.selectors.title);
@@ -688,16 +677,6 @@ define('skylark-widgets-window/Window',[
    };
 
 
-    $.fn.window = function(options) {
-        return this.each(function() {
-            datax.window(this,options);          
-        });
-    };
-
-    velm.partial("window",function(options){
-        datax.window(this.domNode,options);
-    });
-
     $('[data-window-target]').off('click');
     $('[data-window-target]').on('click', function() {
         var $this = $(this),
@@ -723,7 +702,28 @@ define('skylark-widgets-window/Window',[
     });
 
 
-    var WindowManager = sbswt.WindowManager = sbswt.WidgetBase.inherit({
+
+    plugins.register(Window);
+
+    return windows.Window = Window;
+});
+define('skylark-domx-windows/WindowManager',[
+  "skylark-langx/skylark",
+  "skylark-langx/langx",
+  "skylark-domx-browser",
+  "skylark-domx-data",
+  "skylark-domx-eventer",
+  "skylark-domx-noder",
+  "skylark-domx-geom",
+  "skylark-domx-velm",
+  "skylark-domx-query",
+  "skylark-domx-plugins",
+  "./windows",
+  "./Window"
+],function(skylark,langx,browser,datax,eventer,noder,geom,velm,$,plugins,windows,Window){
+
+
+    var WindowManager = langx.Emitter.inherit({
         klassName: "WindowManager",
 
         init : function(options) {
@@ -881,18 +881,19 @@ define('skylark-widgets-window/Window',[
 
     });
 
-
     Window.WindowManager = WindowManager;
 
-    return skylark.attach("widgets.Window",Window);
+    return windows.WindowManager = WindowManager;
 });
-define('skylark-widgets-window/main',[
-    "./Window"
-], function(Window) {
-    return Window;
+define('skylark-domx-windows/main',[
+	"./windows",
+    "./Window",
+    "./WindowManager"
+], function(windows) {
+    return windows;
 });
-define('skylark-widgets-window', ['skylark-widgets-window/main'], function (main) { return main; });
+define('skylark-domx-windows', ['skylark-domx-windows/main'], function (main) { return main; });
 
 
 },this);
-//# sourceMappingURL=sourcemaps/skylark-widgets-window.js.map
+//# sourceMappingURL=sourcemaps/skylark-domx-windows.js.map

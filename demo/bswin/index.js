@@ -1,7 +1,7 @@
 (function ($) {
 
     var 
-        wm = new skylarkjs.ui.sbswt.WindowManager({
+        wm = new skylarkjs.domx.windows.WindowManager({
         container: "#windowPane",
         windowTemplate: skylarkjs.langx.trim($('#basic_window_template').html())
     });
@@ -71,4 +71,4 @@
         });
     });
 
-}(skylarkjs.query));
+}(skylarkjs.domx.query));
