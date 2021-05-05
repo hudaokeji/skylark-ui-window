@@ -10,7 +10,7 @@
   "homepage": "https://github.com/skylark-domx-plugins/skylark-domx-plugins-windows/",
   "author": "Hudaokeji, Inc.",
   "scripts": {
-    "build": "sbundle build ."
+    "build": "slib build ."
   },
   "repository": {
     "type": "git",

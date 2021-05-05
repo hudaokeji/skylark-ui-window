@@ -87,10 +87,10 @@
 })(function(define,require) {
 
 define('skylark-domx-plugins-windows/windows',[
-	"skylark-langx-ns"
-],function(skylark){
-	return skylark.attach("domx.plugins.windows",{
-	});
+	"skylark-domx-plugins"
+],function(plugins){
+	return plugins.windows = {
+	};
 });
 define('skylark-domx-plugins-windows/Window',[
   "skylark-langx/skylark",

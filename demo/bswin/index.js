@@ -1,7 +1,7 @@
 (function ($) {
 
     var 
-        wm = new skylarkjs.domx.windows.WindowManager({
+        wm = new skylarkjs.domx.plugins.windows.WindowManager({
         container: "#windowPane",
         windowTemplate: skylarkjs.langx.trim($('#basic_window_template').html())
     });

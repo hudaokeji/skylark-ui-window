@@ -1,6 +1,6 @@
 define([
-	"skylark-langx-ns"
-],function(skylark){
-	return skylark.attach("domx.plugins.windows",{
-	});
+	"skylark-domx-plugins"
+],function(plugins){
+	return plugins.windows = {
+	};
 })
