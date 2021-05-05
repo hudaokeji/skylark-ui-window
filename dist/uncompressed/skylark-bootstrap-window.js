@@ -1,8 +1,8 @@
 /**
- * skylark-domx-plugins-windows - The skylark windows plugin library
+ * skylark-bootstrap-window - A version of bootstrap-window that ported to running on skylarkjs
  * @author Hudaokeji, Inc.
  * @version v0.9.0
- * @link https://github.com/skylark-domx-plugins/skylark-domx-plugins-windows/
+ * @link https://github.com/skylark-integration/skylark-bootstrap-window/
  * @license MIT
  */
 (function(factory,globals) {
@@ -86,13 +86,13 @@
 
 })(function(define,require) {
 
-define('skylark-domx-plugins-windows/windows',[
-	"skylark-domx-plugins"
-],function(plugins){
-	return plugins.windows = {
-	};
+define('skylark-bootstrap-window/windows',[
+	"skylark-langx-ns"
+],function(skylark){
+	return skylark.attach("intg.bswin", {
+	});
 });
-define('skylark-domx-plugins-windows/Window',[
+define('skylark-bootstrap-window/Window',[
   "skylark-langx/skylark",
   "skylark-langx/langx",
   "skylark-domx-browser",
@@ -707,7 +707,7 @@ define('skylark-domx-plugins-windows/Window',[
 
     return windows.Window = Window;
 });
-define('skylark-domx-plugins-windows/WindowManager',[
+define('skylark-bootstrap-window/WindowManager',[
   "skylark-langx/skylark",
   "skylark-langx/langx",
   "skylark-domx-browser",
@@ -885,15 +885,15 @@ define('skylark-domx-plugins-windows/WindowManager',[
 
     return windows.WindowManager = WindowManager;
 });
-define('skylark-domx-plugins-windows/main',[
+define('skylark-bootstrap-window/main',[
 	"./windows",
     "./Window",
     "./WindowManager"
 ], function(windows) {
     return windows;
 });
-define('skylark-domx-plugins-windows', ['skylark-domx-plugins-windows/main'], function (main) { return main; });
+define('skylark-bootstrap-window', ['skylark-bootstrap-window/main'], function (main) { return main; });
 
 
 },this);
-//# sourceMappingURL=sourcemaps/skylark-domx-plugins-windows.js.map
+//# sourceMappingURL=sourcemaps/skylark-bootstrap-window.js.map

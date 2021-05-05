@@ -1,1 +1,0 @@
-{"version":3,"sources":["windows.js"],"names":["define","plugins","windows"],"mappings":";;;;;;;AAAAA,QACC,wBACC,SAASC,GACV,OAAOA,EAAQC","file":"../windows.js","sourcesContent":["define([\r\n\t\"skylark-domx-plugins\"\r\n],function(plugins){\r\n\treturn plugins.windows = {\r\n\t};\r\n})"]}

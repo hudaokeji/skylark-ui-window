@@ -1,8 +1,8 @@
 /**
- * skylark-domx-plugins-windows - The skylark windows plugin library
+ * skylark-bootstrap-window - A version of bootstrap-window that ported to running on skylarkjs
  * @author Hudaokeji, Inc.
  * @version v0.9.0
- * @link https://github.com/skylark-domx-plugins/skylark-domx-plugins-windows/
+ * @link https://github.com/skylark-integration/skylark-bootstrap-window/
  * @license MIT
  */
 (function(factory,globals) {
@@ -121,6 +121,18 @@ define('skylark-langx-ns/main',[
 	return skylark;
 });
 define('skylark-langx-ns', ['skylark-langx-ns/main'], function (main) { return main; });
+
+define('skylark-bootstrap-window/windows',[
+	"skylark-langx-ns"
+],function(skylark){
+	return skylark.attach("intg.bswin", {
+	});
+});
+define('skylark-langx/skylark',[
+    "skylark-langx-ns"
+], function(ns) {
+	return ns;
+});
 
 define('skylark-langx-types/types',[
     "skylark-langx-ns"
@@ -1038,6 +1050,1043 @@ define('skylark-langx-objects/main',[
 });
 define('skylark-langx-objects', ['skylark-langx-objects/main'], function (main) { return main; });
 
+define('skylark-langx-arrays/arrays',[
+  "skylark-langx-ns",
+  "skylark-langx-types",
+  "skylark-langx-objects"
+],function(skylark,types,objects){
+    var filter = Array.prototype.filter,
+        find = Array.prototype.find,
+        isArrayLike = types.isArrayLike;
+
+    /**
+     * The base implementation of `_.findIndex` and `_.findLastIndex` without
+     * support for iteratee shorthands.
+     *
+     * @param {Array} array The array to inspect.
+     * @param {Function} predicate The function invoked per iteration.
+     * @param {number} fromIndex The index to search from.
+     * @param {boolean} [fromRight] Specify iterating from right to left.
+     * @returns {number} Returns the index of the matched value, else `-1`.
+     */
+    function baseFindIndex(array, predicate, fromIndex, fromRight) {
+      var length = array.length,
+          index = fromIndex + (fromRight ? 1 : -1);
+
+      while ((fromRight ? index-- : ++index < length)) {
+        if (predicate(array[index], index, array)) {
+          return index;
+        }
+      }
+      return -1;
+    }
+
+    /**
+     * The base implementation of `_.indexOf` without `fromIndex` bounds checks.
+     *
+     * @param {Array} array The array to inspect.
+     * @param {*} value The value to search for.
+     * @param {number} fromIndex The index to search from.
+     * @returns {number} Returns the index of the matched value, else `-1`.
+     */
+    function baseIndexOf(array, value, fromIndex) {
+      if (value !== value) {
+        return baseFindIndex(array, baseIsNaN, fromIndex);
+      }
+      var index = fromIndex - 1,
+          length = array.length;
+
+      while (++index < length) {
+        if (array[index] === value) {
+          return index;
+        }
+      }
+      return -1;
+    }
+
+    /**
+     * The base implementation of `isNaN` without support for number objects.
+     *
+     * @private
+     * @param {*} value The value to check.
+     * @returns {boolean} Returns `true` if `value` is `NaN`, else `false`.
+     */
+    function baseIsNaN(value) {
+      return value !== value;
+    }
+
+
+    function compact(array) {
+        return filter.call(array, function(item) {
+            return item != null;
+        });
+    }
+
+    function filter2(array,func) {
+      return filter.call(array,func);
+    }
+
+    function flatten(array) {
+        if (isArrayLike(array)) {
+            var result = [];
+            for (var i = 0; i < array.length; i++) {
+                var item = array[i];
+                if (isArrayLike(item)) {
+                    for (var j = 0; j < item.length; j++) {
+                        result.push(item[j]);
+                    }
+                } else {
+                    result.push(item);
+                }
+            }
+            return result;
+        } else {
+            return array;
+        }
+        //return array.length > 0 ? concat.apply([], array) : array;
+    }
+
+    function grep(array, callback) {
+        var out = [];
+
+        objects.each(array, function(i, item) {
+            if (callback(item, i)) {
+                out.push(item);
+            }
+        });
+
+        return out;
+    }
+
+    function inArray(item, array) {
+        if (!array) {
+            return -1;
+        }
+        var i;
+
+        if (array.indexOf) {
+            return array.indexOf(item);
+        }
+
+        i = array.length;
+        while (i--) {
+            if (array[i] === item) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    function makeArray(obj, offset, startWith) {
+       if (isArrayLike(obj) ) {
+        return (startWith || []).concat(Array.prototype.slice.call(obj, offset || 0));
+      }
+
+      // array of single index
+      return [ obj ];             
+    }
+
+
+    function forEach (arr, fn) {
+      if (arr.forEach) return arr.forEach(fn)
+      for (var i = 0; i < arr.length; i++) fn(arr[i], i);
+    }
+
+    function map(elements, callback) {
+        var value, values = [],
+            i, key
+        if (isArrayLike(elements))
+            for (i = 0; i < elements.length; i++) {
+                value = callback.call(elements[i], elements[i], i);
+                if (value != null) values.push(value)
+            }
+        else
+            for (key in elements) {
+                value = callback.call(elements[key], elements[key], key);
+                if (value != null) values.push(value)
+            }
+        return flatten(values)
+    }
+
+
+    function merge( first, second ) {
+      var l = second.length,
+          i = first.length,
+          j = 0;
+
+      if ( typeof l === "number" ) {
+        for ( ; j < l; j++ ) {
+          first[ i++ ] = second[ j ];
+        }
+      } else {
+        while ( second[j] !== undefined ) {
+          first[ i++ ] = second[ j++ ];
+        }
+      }
+
+      first.length = i;
+
+      return first;
+    }
+
+    function reduce(array,callback,initialValue) {
+        return Array.prototype.reduce.call(array,callback,initialValue);
+    }
+
+    function uniq(array) {
+        return filter.call(array, function(item, idx) {
+            return array.indexOf(item) == idx;
+        })
+    }
+
+    function find2(array,func) {
+      return find.call(array,func);
+    }
+
+    return skylark.attach("langx.arrays",{
+        baseFindIndex: baseFindIndex,
+
+        baseIndexOf : baseIndexOf,
+        
+        compact: compact,
+
+        first : function(items,n) {
+            if (n) {
+                return items.slice(0,n);
+            } else {
+                return items[0];
+            }
+        },
+
+        filter : filter2,
+
+        find : find2,
+        
+        flatten: flatten,
+
+        grep: grep,
+
+        inArray: inArray,
+
+        makeArray: makeArray, // 
+
+        toArray : makeArray,
+
+        merge : merge,
+
+        forEach : forEach,
+
+        map : map,
+        
+        reduce : reduce,
+
+        uniq : uniq
+
+    });
+});
+define('skylark-langx-arrays/main',[
+	"./arrays"
+],function(arrays){
+	return arrays;
+});
+define('skylark-langx-arrays', ['skylark-langx-arrays/main'], function (main) { return main; });
+
+define('skylark-langx/arrays',[
+	"skylark-langx-arrays"
+],function(arrays){
+  return arrays;
+});
+define('skylark-langx-constructs/constructs',[
+  "skylark-langx-ns"
+],function(skylark){
+
+    return skylark.attach("langx.constructs",{});
+});
+define('skylark-langx-constructs/inherit',[
+	"./constructs"
+],function(constructs){
+
+    function inherit(ctor,base) {
+        ///var f = function() {};
+        ///f.prototype = base.prototype;
+        ///
+        ///ctor.prototype = new f();
+
+	    if ((typeof base !== "function") && base) {
+	      throw new TypeError("Super expression must either be null or a function");
+	    }
+
+	    ctor.prototype = Object.create(base && base.prototype, {
+	      constructor: {
+	        value: ctor,
+	        writable: true,
+	        configurable: true
+	      }
+	    });
+
+	    if (base) {
+	    	//tor.__proto__ = base;
+	    	Object.setPrototypeOf(ctor, base);
+	    } 
+    }
+
+    return constructs.inherit = inherit
+});
+define('skylark-langx-constructs/klass',[
+  "skylark-langx-ns",
+  "skylark-langx-types",
+  "skylark-langx-objects",
+  "skylark-langx-arrays",
+  "./constructs",
+  "./inherit"
+],function(skylark,types,objects,arrays,constructs,inherit){
+    var uniq = arrays.uniq,
+        has = objects.has,
+        mixin = objects.mixin,
+        isArray = types.isArray,
+        isDefined = types.isDefined;
+
+/* for reference 
+ function klass(props,parent) {
+    var ctor = function(){
+        this._construct();
+    };
+    ctor.prototype = props;
+    if (parent) {
+        ctor._proto_ = parent;
+        props.__proto__ = parent.prototype;
+    }
+    return ctor;
+}
+
+// Type some JavaScript code here.
+let animal = klass({
+  _construct(){
+      this.name = this.name + ",hi";
+  },
+    
+  name: "Animal",
+  eat() {         // [[HomeObject]] == animal
+    alert(`${this.name} eats.`);
+  }
+    
+    
+});
+
+
+let rabbit = klass({
+  name: "Rabbit",
+  _construct(){
+      super._construct();
+  },
+  eat() {         // [[HomeObject]] == rabbit
+    super.eat();
+  }
+},animal);
+
+let longEar = klass({
+  name: "Long Ear",
+  eat() {         // [[HomeObject]] == longEar
+    super.eat();
+  }
+},rabbit);
+*/
+    
+
+
+    var f1 = function() {
+        function extendClass(ctor, props, options) {
+            // Copy the properties to the prototype of the class.
+            var proto = ctor.prototype,
+                _super = ctor.superclass.prototype,
+                noOverrided = options && options.noOverrided,
+                overrides = options && options.overrides || {};
+
+            for (var name in props) {
+                if (name === "constructor") {
+                    continue;
+                }
+
+                // Check if we're overwriting an existing function
+                var prop = props[name];
+                if (typeof props[name] == "function") {
+                    proto[name] =  !prop._constructor && !noOverrided && typeof _super[name] == "function" ?
+                          (function(name, fn, superFn) {
+                            return function() {
+                                var tmp = this.overrided;
+
+                                // Add a new ._super() method that is the same method
+                                // but on the super-class
+                                this.overrided = superFn;
+
+                                // The method only need to be bound temporarily, so we
+                                // remove it when we're done executing
+                                var ret = fn.apply(this, arguments);
+
+                                this.overrided = tmp;
+
+                                return ret;
+                            };
+                        })(name, prop, _super[name]) :
+                        prop;
+                } else if (types.isPlainObject(prop) && prop!==null && (prop.get)) {
+                    Object.defineProperty(proto,name,prop);
+                } else {
+                    proto[name] = prop;
+                }
+            }
+            return ctor;
+        }
+
+        function serialMixins(ctor,mixins) {
+            var result = [];
+
+            mixins.forEach(function(mixin){
+                if (has(mixin,"__mixins__")) {
+                     throw new Error("nested mixins");
+                }
+                var clss = [];
+                while (mixin) {
+                    clss.unshift(mixin);
+                    mixin = mixin.superclass;
+                }
+                result = result.concat(clss);
+            });
+
+            result = uniq(result);
+
+            result = result.filter(function(mixin){
+                var cls = ctor;
+                while (cls) {
+                    if (mixin === cls) {
+                        return false;
+                    }
+                    if (has(cls,"__mixins__")) {
+                        var clsMixines = cls["__mixins__"];
+                        for (var i=0; i<clsMixines.length;i++) {
+                            if (clsMixines[i]===mixin) {
+                                return false;
+                            }
+                        }
+                    }
+                    cls = cls.superclass;
+                }
+                return true;
+            });
+
+            if (result.length>0) {
+                return result;
+            } else {
+                return false;
+            }
+        }
+
+        function mergeMixins(ctor,mixins) {
+            var newCtor =ctor;
+            for (var i=0;i<mixins.length;i++) {
+                var xtor = new Function();
+
+                inherit(xtor,newCtor)
+                //xtor.prototype = Object.create(newCtor.prototype);
+                //xtor.__proto__ = newCtor;
+                xtor.superclass = null;
+                mixin(xtor.prototype,mixins[i].prototype);
+                xtor.prototype.__mixin__ = mixins[i];
+                newCtor = xtor;
+            }
+
+            return newCtor;
+        }
+
+        function _constructor ()  {
+            if (this._construct) {
+                return this._construct.apply(this, arguments);
+            } else  if (this.init) {
+                return this.init.apply(this, arguments);
+            }
+        }
+
+        return function createClass(props, parent, mixins,options) {
+            if (isArray(parent)) {
+                options = mixins;
+                mixins = parent;
+                parent = null;
+            }
+            parent = parent || Object;
+
+            if (isDefined(mixins) && !isArray(mixins)) {
+                options = mixins;
+                mixins = false;
+            }
+
+            var innerParent = parent;
+
+            if (mixins) {
+                mixins = serialMixins(innerParent,mixins);
+            }
+
+            if (mixins) {
+                innerParent = mergeMixins(innerParent,mixins);
+            }
+
+            var klassName = props.klassName || "",
+                ctor = new Function(
+                    "return function " + klassName + "() {" +
+                    "var inst = this," +
+                    " ctor = arguments.callee;" +
+                    "if (!(inst instanceof ctor)) {" +
+                    "inst = Object.create(ctor.prototype);" +
+                    "}" +
+                    "return ctor._constructor.apply(inst, arguments) || inst;" + 
+                    "}"
+                )();
+
+
+            // Populate our constructed prototype object
+            ///ctor.prototype = Object.create(innerParent.prototype);
+
+            // Enforce the constructor to be what we expect
+            ///ctor.prototype.constructor = ctor;
+  
+            // And make this class extendable
+            ///ctor.__proto__ = innerParent;
+
+            inherit(ctor,innerParent);
+
+            ctor.superclass = parent;
+
+            if (!ctor._constructor) {
+                ctor._constructor = _constructor;
+            } 
+
+            if (mixins) {
+                ctor.__mixins__ = mixins;
+            }
+
+            if (!ctor.partial) {
+                ctor.partial = function(props, options) {
+                    return extendClass(this, props, options);
+                };
+            }
+            if (!ctor.inherit) {
+                ctor.inherit = function(props, mixins,options) {
+                    return createClass(props, this, mixins,options);
+                };
+            }
+
+            ctor.partial(props, options);
+
+            return ctor;
+        };
+    }
+
+    var createClass = f1();
+
+    return constructs.klass = createClass;
+});
+define('skylark-langx-klass/klass',[
+  "skylark-langx-ns",
+  "skylark-langx-constructs/klass"
+],function(skylark,klass){
+
+
+    return skylark.attach("langx.klass",klass);
+});
+define('skylark-langx-klass/main',[
+	"./klass"
+],function(klass){
+	return klass;
+});
+define('skylark-langx-klass', ['skylark-langx-klass/main'], function (main) { return main; });
+
+define('skylark-langx/klass',[
+    "skylark-langx-klass"
+],function(klass){
+    return klass;
+});
+define('skylark-langx/ArrayStore',[
+    "./klass"
+],function(klass){
+    var SimpleQueryEngine = function(query, options){
+        // summary:
+        //      Simple query engine that matches using filter functions, named filter
+        //      functions or objects by name-value on a query object hash
+        //
+        // description:
+        //      The SimpleQueryEngine provides a way of getting a QueryResults through
+        //      the use of a simple object hash as a filter.  The hash will be used to
+        //      match properties on data objects with the corresponding value given. In
+        //      other words, only exact matches will be returned.
+        //
+        //      This function can be used as a template for more complex query engines;
+        //      for example, an engine can be created that accepts an object hash that
+        //      contains filtering functions, or a string that gets evaluated, etc.
+        //
+        //      When creating a new dojo.store, simply set the store's queryEngine
+        //      field as a reference to this function.
+        //
+        // query: Object
+        //      An object hash with fields that may match fields of items in the store.
+        //      Values in the hash will be compared by normal == operator, but regular expressions
+        //      or any object that provides a test() method are also supported and can be
+        //      used to match strings by more complex expressions
+        //      (and then the regex's or object's test() method will be used to match values).
+        //
+        // options: dojo/store/api/Store.QueryOptions?
+        //      An object that contains optional information such as sort, start, and count.
+        //
+        // returns: Function
+        //      A function that caches the passed query under the field "matches".  See any
+        //      of the "query" methods on dojo.stores.
+        //
+        // example:
+        //      Define a store with a reference to this engine, and set up a query method.
+        //
+        //  |   var myStore = function(options){
+        //  |       //  ...more properties here
+        //  |       this.queryEngine = SimpleQueryEngine;
+        //  |       //  define our query method
+        //  |       this.query = function(query, options){
+        //  |           return QueryResults(this.queryEngine(query, options)(this.data));
+        //  |       };
+        //  |   };
+
+        // create our matching query function
+        switch(typeof query){
+            default:
+                throw new Error("Can not query with a " + typeof query);
+            case "object": case "undefined":
+                var queryObject = query;
+                query = function(object){
+                    for(var key in queryObject){
+                        var required = queryObject[key];
+                        if(required && required.test){
+                            // an object can provide a test method, which makes it work with regex
+                            if(!required.test(object[key], object)){
+                                return false;
+                            }
+                        }else if(required != object[key]){
+                            return false;
+                        }
+                    }
+                    return true;
+                };
+                break;
+            case "string":
+                // named query
+                if(!this[query]){
+                    throw new Error("No filter function " + query + " was found in store");
+                }
+                query = this[query];
+                // fall through
+            case "function":
+                // fall through
+        }
+        
+        function filter(arr, callback, thisObject){
+            // summary:
+            //      Returns a new Array with those items from arr that match the
+            //      condition implemented by callback.
+            // arr: Array
+            //      the array to iterate over.
+            // callback: Function|String
+            //      a function that is invoked with three arguments (item,
+            //      index, array). The return of this function is expected to
+            //      be a boolean which determines whether the passed-in item
+            //      will be included in the returned array.
+            // thisObject: Object?
+            //      may be used to scope the call to callback
+            // returns: Array
+            // description:
+            //      This function corresponds to the JavaScript 1.6 Array.filter() method, with one difference: when
+            //      run over sparse arrays, this implementation passes the "holes" in the sparse array to
+            //      the callback function with a value of undefined. JavaScript 1.6's filter skips the holes in the sparse array.
+            //      For more details, see:
+            //      https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/filter
+            // example:
+            //  | // returns [2, 3, 4]
+            //  | array.filter([1, 2, 3, 4], function(item){ return item>1; });
+
+            // TODO: do we need "Ctr" here like in map()?
+            var i = 0, l = arr && arr.length || 0, out = [], value;
+            if(l && typeof arr == "string") arr = arr.split("");
+            if(typeof callback == "string") callback = cache[callback] || buildFn(callback);
+            if(thisObject){
+                for(; i < l; ++i){
+                    value = arr[i];
+                    if(callback.call(thisObject, value, i, arr)){
+                        out.push(value);
+                    }
+                }
+            }else{
+                for(; i < l; ++i){
+                    value = arr[i];
+                    if(callback(value, i, arr)){
+                        out.push(value);
+                    }
+                }
+            }
+            return out; // Array
+        }
+
+        function execute(array){
+            // execute the whole query, first we filter
+            var results = filter(array, query);
+            // next we sort
+            var sortSet = options && options.sort;
+            if(sortSet){
+                results.sort(typeof sortSet == "function" ? sortSet : function(a, b){
+                    for(var sort, i=0; sort = sortSet[i]; i++){
+                        var aValue = a[sort.attribute];
+                        var bValue = b[sort.attribute];
+                        // valueOf enables proper comparison of dates
+                        aValue = aValue != null ? aValue.valueOf() : aValue;
+                        bValue = bValue != null ? bValue.valueOf() : bValue;
+                        if (aValue != bValue){
+                            // modified by lwf 2016/07/09
+                            //return !!sort.descending == (aValue == null || aValue > bValue) ? -1 : 1;
+                            return !!sort.descending == (aValue == null || aValue > bValue) ? -1 : 1;
+                        }
+                    }
+                    return 0;
+                });
+            }
+            // now we paginate
+            if(options && (options.start || options.count)){
+                var total = results.length;
+                results = results.slice(options.start || 0, (options.start || 0) + (options.count || Infinity));
+                results.total = total;
+            }
+            return results;
+        }
+        execute.matches = query;
+        return execute;
+    };
+
+    var QueryResults = function(results){
+        // summary:
+        //      A function that wraps the results of a store query with additional
+        //      methods.
+        // description:
+        //      QueryResults is a basic wrapper that allows for array-like iteration
+        //      over any kind of returned data from a query.  While the simplest store
+        //      will return a plain array of data, other stores may return deferreds or
+        //      promises; this wrapper makes sure that *all* results can be treated
+        //      the same.
+        //
+        //      Additional methods include `forEach`, `filter` and `map`.
+        // results: Array|dojo/promise/Promise
+        //      The result set as an array, or a promise for an array.
+        // returns:
+        //      An array-like object that can be used for iterating over.
+        // example:
+        //      Query a store and iterate over the results.
+        //
+        //  |   store.query({ prime: true }).forEach(function(item){
+        //  |       //  do something
+        //  |   });
+
+        if(!results){
+            return results;
+        }
+
+        var isPromise = !!results.then;
+        // if it is a promise it may be frozen
+        if(isPromise){
+            results = Object.delegate(results);
+        }
+        function addIterativeMethod(method){
+            // Always add the iterative methods so a QueryResults is
+            // returned whether the environment is ES3 or ES5
+            results[method] = function(){
+                var args = arguments;
+                var result = Deferred.when(results, function(results){
+                    //Array.prototype.unshift.call(args, results);
+                    return QueryResults(Array.prototype[method].apply(results, args));
+                });
+                // forEach should only return the result of when()
+                // when we're wrapping a promise
+                if(method !== "forEach" || isPromise){
+                    return result;
+                }
+            };
+        }
+
+        addIterativeMethod("forEach");
+        addIterativeMethod("filter");
+        addIterativeMethod("map");
+        if(results.total == null){
+            results.total = Deferred.when(results, function(results){
+                return results.length;
+            });
+        }
+        return results; // Object
+    };
+
+    var ArrayStore = klass({
+        "klassName": "ArrayStore",
+
+        "queryEngine": SimpleQueryEngine,
+        
+        "idProperty": "id",
+
+
+        get: function(id){
+            // summary:
+            //      Retrieves an object by its identity
+            // id: Number
+            //      The identity to use to lookup the object
+            // returns: Object
+            //      The object in the store that matches the given id.
+            return this.data[this.index[id]];
+        },
+
+        getIdentity: function(object){
+            return object[this.idProperty];
+        },
+
+        put: function(object, options){
+            var data = this.data,
+                index = this.index,
+                idProperty = this.idProperty;
+            var id = object[idProperty] = (options && "id" in options) ? options.id : idProperty in object ? object[idProperty] : Math.random();
+            if(id in index){
+                // object exists
+                if(options && options.overwrite === false){
+                    throw new Error("Object already exists");
+                }
+                // replace the entry in data
+                data[index[id]] = object;
+            }else{
+                // add the new object
+                index[id] = data.push(object) - 1;
+            }
+            return id;
+        },
+
+        add: function(object, options){
+            (options = options || {}).overwrite = false;
+            // call put with overwrite being false
+            return this.put(object, options);
+        },
+
+        remove: function(id){
+            // summary:
+            //      Deletes an object by its identity
+            // id: Number
+            //      The identity to use to delete the object
+            // returns: Boolean
+            //      Returns true if an object was removed, falsy (undefined) if no object matched the id
+            var index = this.index;
+            var data = this.data;
+            if(id in index){
+                data.splice(index[id], 1);
+                // now we have to reindex
+                this.setData(data);
+                return true;
+            }
+        },
+        query: function(query, options){
+            // summary:
+            //      Queries the store for objects.
+            // query: Object
+            //      The query to use for retrieving objects from the store.
+            // options: dojo/store/api/Store.QueryOptions?
+            //      The optional arguments to apply to the resultset.
+            // returns: dojo/store/api/Store.QueryResults
+            //      The results of the query, extended with iterative methods.
+            //
+            // example:
+            //      Given the following store:
+            //
+            //  |   var store = new Memory({
+            //  |       data: [
+            //  |           {id: 1, name: "one", prime: false },
+            //  |           {id: 2, name: "two", even: true, prime: true},
+            //  |           {id: 3, name: "three", prime: true},
+            //  |           {id: 4, name: "four", even: true, prime: false},
+            //  |           {id: 5, name: "five", prime: true}
+            //  |       ]
+            //  |   });
+            //
+            //  ...find all items where "prime" is true:
+            //
+            //  |   var results = store.query({ prime: true });
+            //
+            //  ...or find all items where "even" is true:
+            //
+            //  |   var results = store.query({ even: true });
+            return QueryResults(this.queryEngine(query, options)(this.data));
+        },
+
+        setData: function(data){
+            // summary:
+            //      Sets the given data as the source for this store, and indexes it
+            // data: Object[]
+            //      An array of objects to use as the source of data.
+            if(data.items){
+                // just for convenience with the data format IFRS expects
+                this.idProperty = data.identifier || this.idProperty;
+                data = this.data = data.items;
+            }else{
+                this.data = data;
+            }
+            this.index = {};
+            for(var i = 0, l = data.length; i < l; i++){
+                this.index[data[i][this.idProperty]] = i;
+            }
+        },
+
+        init: function(options) {
+            for(var i in options){
+                this[i] = options[i];
+            }
+            this.setData(this.data || []);
+        }
+
+    });
+
+	return ArrayStore;
+});
+define('skylark-langx-aspect/aspect',[
+    "skylark-langx-ns"
+],function(skylark){
+
+  var undefined, nextId = 0;
+    function advise(dispatcher, type, advice, receiveArguments){
+        var previous = dispatcher[type];
+        var around = type == "around";
+        var signal;
+        if(around){
+            var advised = advice(function(){
+                return previous.advice(this, arguments);
+            });
+            signal = {
+                remove: function(){
+                    if(advised){
+                        advised = dispatcher = advice = null;
+                    }
+                },
+                advice: function(target, args){
+                    return advised ?
+                        advised.apply(target, args) :  // called the advised function
+                        previous.advice(target, args); // cancelled, skip to next one
+                }
+            };
+        }else{
+            // create the remove handler
+            signal = {
+                remove: function(){
+                    if(signal.advice){
+                        var previous = signal.previous;
+                        var next = signal.next;
+                        if(!next && !previous){
+                            delete dispatcher[type];
+                        }else{
+                            if(previous){
+                                previous.next = next;
+                            }else{
+                                dispatcher[type] = next;
+                            }
+                            if(next){
+                                next.previous = previous;
+                            }
+                        }
+
+                        // remove the advice to signal that this signal has been removed
+                        dispatcher = advice = signal.advice = null;
+                    }
+                },
+                id: nextId++,
+                advice: advice,
+                receiveArguments: receiveArguments
+            };
+        }
+        if(previous && !around){
+            if(type == "after"){
+                // add the listener to the end of the list
+                // note that we had to change this loop a little bit to workaround a bizarre IE10 JIT bug
+                while(previous.next && (previous = previous.next)){}
+                previous.next = signal;
+                signal.previous = previous;
+            }else if(type == "before"){
+                // add to beginning
+                dispatcher[type] = signal;
+                signal.next = previous;
+                previous.previous = signal;
+            }
+        }else{
+            // around or first one just replaces
+            dispatcher[type] = signal;
+        }
+        return signal;
+    }
+    function aspect(type){
+        return function(target, methodName, advice, receiveArguments){
+            var existing = target[methodName], dispatcher;
+            if(!existing || existing.target != target){
+                // no dispatcher in place
+                target[methodName] = dispatcher = function(){
+                    var executionId = nextId;
+                    // before advice
+                    var args = arguments;
+                    var before = dispatcher.before;
+                    while(before){
+                        args = before.advice.apply(this, args) || args;
+                        before = before.next;
+                    }
+                    // around advice
+                    if(dispatcher.around){
+                        var results = dispatcher.around.advice(this, args);
+                    }
+                    // after advice
+                    var after = dispatcher.after;
+                    while(after && after.id < executionId){
+                        if(after.receiveArguments){
+                            var newResults = after.advice.apply(this, args);
+                            // change the return value only if a new value was returned
+                            results = newResults === undefined ? results : newResults;
+                        }else{
+                            results = after.advice.call(this, results, args);
+                        }
+                        after = after.next;
+                    }
+                    return results;
+                };
+                if(existing){
+                    dispatcher.around = {advice: function(target, args){
+                        return existing.apply(target, args);
+                    }};
+                }
+                dispatcher.target = target;
+            }
+            var results = advise((dispatcher || existing), type, advice, receiveArguments);
+            advice = null;
+            return results;
+        };
+    }
+
+    return skylark.attach("langx.aspect",{
+        after: aspect("after"),
+ 
+        around: aspect("around"),
+        
+        before: aspect("before")
+    });
+});
+define('skylark-langx-aspect/main',[
+	"./aspect"
+],function(aspect){
+	return aspect;
+});
+define('skylark-langx-aspect', ['skylark-langx-aspect/main'], function (main) { return main; });
+
+define('skylark-langx/aspect',[
+    "skylark-langx-aspect"
+],function(aspect){
+  return aspect;
+});
 define('skylark-langx-funcs/funcs',[
   "skylark-langx-ns",
 ],function(skylark,types,objects){
@@ -1426,551 +2475,560 @@ define('skylark-langx-funcs/main',[
 });
 define('skylark-langx-funcs', ['skylark-langx-funcs/main'], function (main) { return main; });
 
-define('skylark-langx-arrays/arrays',[
-  "skylark-langx-ns",
-  "skylark-langx-types",
-  "skylark-langx-objects"
-],function(skylark,types,objects){
-    var filter = Array.prototype.filter,
-        find = Array.prototype.find,
-        isArrayLike = types.isArrayLike;
+define('skylark-langx-async/Deferred',[
+    "skylark-langx-arrays",
+	"skylark-langx-funcs",
+    "skylark-langx-objects"
+],function(arrays,funcs,objects){
+    "use strict";
 
-    /**
-     * The base implementation of `_.findIndex` and `_.findLastIndex` without
-     * support for iteratee shorthands.
-     *
-     * @param {Array} array The array to inspect.
-     * @param {Function} predicate The function invoked per iteration.
-     * @param {number} fromIndex The index to search from.
-     * @param {boolean} [fromRight] Specify iterating from right to left.
-     * @returns {number} Returns the index of the matched value, else `-1`.
-     */
-    function baseFindIndex(array, predicate, fromIndex, fromRight) {
-      var length = array.length,
-          index = fromIndex + (fromRight ? 1 : -1);
+    var slice = Array.prototype.slice,
+        proxy = funcs.proxy,
+        makeArray = arrays.makeArray,
+        result = objects.result,
+        mixin = objects.mixin;
 
-      while ((fromRight ? index-- : ++index < length)) {
-        if (predicate(array[index], index, array)) {
-          return index;
-        }
-      }
-      return -1;
-    }
-
-    /**
-     * The base implementation of `_.indexOf` without `fromIndex` bounds checks.
-     *
-     * @param {Array} array The array to inspect.
-     * @param {*} value The value to search for.
-     * @param {number} fromIndex The index to search from.
-     * @returns {number} Returns the index of the matched value, else `-1`.
-     */
-    function baseIndexOf(array, value, fromIndex) {
-      if (value !== value) {
-        return baseFindIndex(array, baseIsNaN, fromIndex);
-      }
-      var index = fromIndex - 1,
-          length = array.length;
-
-      while (++index < length) {
-        if (array[index] === value) {
-          return index;
-        }
-      }
-      return -1;
-    }
-
-    /**
-     * The base implementation of `isNaN` without support for number objects.
-     *
-     * @private
-     * @param {*} value The value to check.
-     * @returns {boolean} Returns `true` if `value` is `NaN`, else `false`.
-     */
-    function baseIsNaN(value) {
-      return value !== value;
-    }
+    mixin(Promise.prototype,{
+        always: function(handler) {
+            //this.done(handler);
+            //this.fail(handler);
+            this.then(handler,handler);
+            return this;
+        },
+        done : function() {
+            for (var i = 0;i<arguments.length;i++) {
+                this.then(arguments[i]);
+            }
+            return this;
+        },
+        fail : function(handler) { 
+            //return mixin(Promise.prototype.catch.call(this,handler),added);
+            //return this.then(null,handler);
+            this.catch(handler);
+            return this;
+         }
+    });
 
 
-    function compact(array) {
-        return filter.call(array, function(item) {
-            return item != null;
-        });
-    }
+    var Deferred = function() {
+        var self = this,
+            p = this.promise = makePromise2(new Promise(function(resolve, reject) {
+                self._resolve = resolve;
+                self._reject = reject;
+            }));
 
-    function filter2(array,func) {
-      return filter.call(array,func);
-    }
+        //wrapPromise(p,self);
 
-    function flatten(array) {
-        if (isArrayLike(array)) {
-            var result = [];
-            for (var i = 0; i < array.length; i++) {
-                var item = array[i];
-                if (isArrayLike(item)) {
-                    for (var j = 0; j < item.length; j++) {
-                        result.push(item[j]);
+        //this[PGLISTENERS] = [];
+        //this[PGNOTIFIES] = [];
+
+        //this.resolve = Deferred.prototype.resolve.bind(this);
+        //this.reject = Deferred.prototype.reject.bind(this);
+        //this.progress = Deferred.prototype.progress.bind(this);
+
+    };
+
+   
+    function makePromise2(promise) {
+        // Don't modify any promise that has been already modified.
+        if (promise.isResolved) return promise;
+
+        // Set initial state
+        var isPending = true;
+        var isRejected = false;
+        var isResolved = false;
+
+        // Observe the promise, saving the fulfillment in a closure scope.
+        var result = promise.then(
+            function(v) {
+                isResolved = true;
+                isPending = false;
+                return v; 
+            }, 
+            function(e) {
+                isRejected = true;
+                isPending = false;
+                throw e; 
+            }
+        );
+
+        result.isResolved = function() { return isResolved; };
+        result.isPending = function() { return isPending; };
+        result.isRejected = function() { return isRejected; };
+
+        result.state = function() {
+            if (isResolved) {
+                return 'resolved';
+            }
+            if (isRejected) {
+                return 'rejected';
+            }
+            return 'pending';
+        };
+
+        var notified = [],
+            listeners = [];
+
+          
+        result.then = function(onResolved,onRejected,onProgress) {
+            if (onProgress) {
+                this.progress(onProgress);
+            }
+            return makePromise2(Promise.prototype.then.call(this,
+                onResolved && function(args) {
+                    if (args && args.__ctx__ !== undefined) {
+                        return onResolved.apply(args.__ctx__,args);
+                    } else {
+                        return onResolved(args);
                     }
-                } else {
-                    result.push(item);
+                },
+                onRejected && function(args){
+                    if (args && args.__ctx__ !== undefined) {
+                        return onRejected.apply(args.__ctx__,args);
+                    } else {
+                        return onRejected(args);
+                    }
                 }
+            ));
+        };
+
+        result.progress = function(handler) {
+            notified.forEach(function (value) {
+                handler(value);
+            });
+            listeners.push(handler);
+            return this;
+        };
+
+        result.pipe = result.then;
+
+        result.notify = function(value) {
+            try {
+                notified.push(value);
+
+                return listeners.forEach(function (listener) {
+                    return listener(value);
+                });
+            } catch (error) {
+            this.reject(error);
             }
-            return result;
-        } else {
-            return array;
-        }
-        //return array.length > 0 ? concat.apply([], array) : array;
+            return this;
+        };
+
+        return result;
     }
 
-    function grep(array, callback) {
-        var out = [];
+ 
+    Deferred.prototype.resolve = function(value) {
+        var args = slice.call(arguments);
+        return this.resolveWith(null,args);
+    };
 
-        objects.each(array, function(i, item) {
-            if (callback(item, i)) {
-                out.push(item);
-            }
-        });
+    Deferred.prototype.resolveWith = function(context,args) {
+        args = args ? makeArray(args) : []; 
+        args.__ctx__ = context;
+        this._resolve(args);
+        this._resolved = true;
+        return this;
+    };
 
-        return out;
-    }
+    Deferred.prototype.notify = function(value) {
+        var p = result(this,"promise");
+        p.notify(value);
+        return this;
+    };
 
-    function inArray(item, array) {
-        if (!array) {
-            return -1;
-        }
-        var i;
+    Deferred.prototype.reject = function(reason) {
+        var args = slice.call(arguments);
+        return this.rejectWith(null,args);
+    };
 
-        if (array.indexOf) {
-            return array.indexOf(item);
-        }
+    Deferred.prototype.rejectWith = function(context,args) {
+        args = args ? makeArray(args) : []; 
+        args.__ctx__ = context;
+        this._reject(args);
+        this._rejected = true;
+        return this;
+    };
 
-        i = array.length;
-        while (i--) {
-            if (array[i] === item) {
-                return i;
-            }
-        }
+    Deferred.prototype.isResolved = function() {
+        var p = result(this,"promise");
+        return p.isResolved();
+    };
 
-        return -1;
-    }
+    Deferred.prototype.isRejected = function() {
+        var p = result(this,"promise");
+        return p.isRejected();
+    };
 
-    function makeArray(obj, offset, startWith) {
-       if (isArrayLike(obj) ) {
-        return (startWith || []).concat(Array.prototype.slice.call(obj, offset || 0));
-      }
+    Deferred.prototype.state = function() {
+        var p = result(this,"promise");
+        return p.state();
+    };
 
-      // array of single index
-      return [ obj ];             
-    }
+    Deferred.prototype.then = function(callback, errback, progback) {
+        var p = result(this,"promise");
+        return p.then(callback, errback, progback);
+    };
 
-
-    function forEach (arr, fn) {
-      if (arr.forEach) return arr.forEach(fn)
-      for (var i = 0; i < arr.length; i++) fn(arr[i], i);
-    }
-
-    function map(elements, callback) {
-        var value, values = [],
-            i, key
-        if (isArrayLike(elements))
-            for (i = 0; i < elements.length; i++) {
-                value = callback.call(elements[i], elements[i], i);
-                if (value != null) values.push(value)
-            }
-        else
-            for (key in elements) {
-                value = callback.call(elements[key], elements[key], key);
-                if (value != null) values.push(value)
-            }
-        return flatten(values)
-    }
+    Deferred.prototype.progress = function(progback){
+        var p = result(this,"promise");
+        return p.progress(progback);
+    };
+   
+    Deferred.prototype.catch = function(errback) {
+        var p = result(this,"promise");
+        return p.catch(errback);
+    };
 
 
-    function merge( first, second ) {
-      var l = second.length,
-          i = first.length,
-          j = 0;
+    Deferred.prototype.always  = function() {
+        var p = result(this,"promise");
+        p.always.apply(p,arguments);
+        return this;
+    };
 
-      if ( typeof l === "number" ) {
-        for ( ; j < l; j++ ) {
-          first[ i++ ] = second[ j ];
-        }
-      } else {
-        while ( second[j] !== undefined ) {
-          first[ i++ ] = second[ j++ ];
-        }
-      }
+    Deferred.prototype.done  = function() {
+        var p = result(this,"promise");
+        p.done.apply(p,arguments);
+        return this;
+    };
 
-      first.length = i;
+    Deferred.prototype.fail = function(errback) {
+        var p = result(this,"promise");
+        p.fail(errback);
+        return this;
+    };
 
-      return first;
-    }
 
-    function reduce(array,callback,initialValue) {
-        return Array.prototype.reduce.call(array,callback,initialValue);
-    }
+    Deferred.all = function(array) {
+        //return wrapPromise(Promise.all(array));
+        var d = new Deferred();
+        Promise.all(array).then(d.resolve.bind(d),d.reject.bind(d));
+        return result(d,"promise");
+    };
 
-    function uniq(array) {
-        return filter.call(array, function(item, idx) {
-            return array.indexOf(item) == idx;
-        })
-    }
+    Deferred.first = function(array) {
+        return makePromise2(Promise.race(array));
+    };
 
-    function find2(array,func) {
-      return find.call(array,func);
-    }
 
-    return skylark.attach("langx.arrays",{
-        baseFindIndex: baseFindIndex,
+    Deferred.when = function(valueOrPromise, callback, errback, progback) {
+        var receivedPromise = valueOrPromise && typeof valueOrPromise.then === "function";
+        var nativePromise = receivedPromise && valueOrPromise instanceof Promise;
 
-        baseIndexOf : baseIndexOf,
-        
-        compact: compact,
-
-        first : function(items,n) {
-            if (n) {
-                return items.slice(0,n);
+        if (!receivedPromise) {
+            if (arguments.length > 1) {
+                return callback ? callback(valueOrPromise) : valueOrPromise;
             } else {
-                return items[0];
+                return new Deferred().resolve(valueOrPromise);
             }
+        } else if (!nativePromise) {
+            var deferred = new Deferred(valueOrPromise.cancel);
+            valueOrPromise.then(proxy(deferred.resolve,deferred), proxy(deferred.reject,deferred), deferred.notify);
+            valueOrPromise = deferred.promise;
+        }
+
+        if (callback || errback || progback) {
+            return valueOrPromise.then(callback, errback, progback);
+        }
+        return valueOrPromise;
+    };
+
+    Deferred.reject = function(err) {
+        var d = new Deferred();
+        d.reject(err);
+        return d.promise;
+    };
+
+    Deferred.resolve = function(data) {
+        var d = new Deferred();
+        d.resolve.apply(d,arguments);
+        return d.promise;
+    };
+
+    Deferred.immediate = Deferred.resolve;
+
+
+    Deferred.promise = function(callback) {
+        var d = new Deferred();
+
+        callback(d.resolve.bind(d),d.reject.bind(d),d.progress.bind(d));
+
+        return d.promise;
+    };
+
+    return Deferred;
+});
+define('skylark-langx-async/async',[
+    "skylark-langx-ns",
+    "skylark-langx-objects",
+    "./Deferred"
+],function(skylark,objects,Deferred){
+    var each = objects.each;
+    
+    var async = {
+        Deferred : Deferred,
+
+        parallel : function(arr,args,ctx) {
+            var rets = [];
+            ctx = ctx || null;
+            args = args || [];
+
+            each(arr,function(i,func){
+                rets.push(func.apply(ctx,args));
+            });
+
+            return Deferred.all(rets);
         },
 
-        filter : filter2,
+        series : function(arr,args,ctx) {
+            var rets = [],
+                d = new Deferred(),
+                p = d.promise;
 
-        find : find2,
-        
-        flatten: flatten,
+            ctx = ctx || null;
+            args = args || [];
 
-        grep: grep,
+            d.resolve();
+            each(arr,function(i,func){
+                p = p.then(function(){
+                    return func.apply(ctx,args);
+                });
+                rets.push(p);
+            });
 
-        inArray: inArray,
+            return Deferred.all(rets);
+        },
 
-        makeArray: makeArray, // 
+        waterful : function(arr,args,ctx) {
+            var d = new Deferred(),
+                p = d.promise;
 
-        toArray : makeArray,
+            ctx = ctx || null;
+            args = args || [];
 
-        merge : merge,
+            d.resolveWith(ctx,args);
 
-        forEach : forEach,
-
-        map : map,
-        
-        reduce : reduce,
-
-        uniq : uniq
-
-    });
-});
-define('skylark-langx-arrays/main',[
-	"./arrays"
-],function(arrays){
-	return arrays;
-});
-define('skylark-langx-arrays', ['skylark-langx-arrays/main'], function (main) { return main; });
-
-define('skylark-langx-constructs/constructs',[
-  "skylark-langx-ns"
-],function(skylark){
-
-    return skylark.attach("langx.constructs",{});
-});
-define('skylark-langx-constructs/inherit',[
-	"./constructs"
-],function(constructs){
-
-    function inherit(ctor,base) {
-        ///var f = function() {};
-        ///f.prototype = base.prototype;
-        ///
-        ///ctor.prototype = new f();
-
-	    if ((typeof base !== "function") && base) {
-	      throw new TypeError("Super expression must either be null or a function");
-	    }
-
-	    ctor.prototype = Object.create(base && base.prototype, {
-	      constructor: {
-	        value: ctor,
-	        writable: true,
-	        configurable: true
-	      }
-	    });
-
-	    if (base) {
-	    	//tor.__proto__ = base;
-	    	Object.setPrototypeOf(ctor, base);
-	    } 
-    }
-
-    return constructs.inherit = inherit
-});
-define('skylark-langx-constructs/klass',[
-  "skylark-langx-ns",
-  "skylark-langx-types",
-  "skylark-langx-objects",
-  "skylark-langx-arrays",
-  "./constructs",
-  "./inherit"
-],function(skylark,types,objects,arrays,constructs,inherit){
-    var uniq = arrays.uniq,
-        has = objects.has,
-        mixin = objects.mixin,
-        isArray = types.isArray,
-        isDefined = types.isDefined;
-
-/* for reference 
- function klass(props,parent) {
-    var ctor = function(){
-        this._construct();
+            each(arr,function(i,func){
+                p = p.then(func);
+            });
+            return p;
+        }
     };
-    ctor.prototype = props;
-    if (parent) {
-        ctor._proto_ = parent;
-        props.__proto__ = parent.prototype;
-    }
-    return ctor;
-}
 
-// Type some JavaScript code here.
-let animal = klass({
-  _construct(){
-      this.name = this.name + ",hi";
-  },
-    
-  name: "Animal",
-  eat() {         // [[HomeObject]] == animal
-    alert(`${this.name} eats.`);
-  }
-    
-    
+	return skylark.attach("langx.async",async);	
 });
-
-
-let rabbit = klass({
-  name: "Rabbit",
-  _construct(){
-      super._construct();
-  },
-  eat() {         // [[HomeObject]] == rabbit
-    super.eat();
-  }
-},animal);
-
-let longEar = klass({
-  name: "Long Ear",
-  eat() {         // [[HomeObject]] == longEar
-    super.eat();
-  }
-},rabbit);
-*/
-    
-
-
-    var f1 = function() {
-        function extendClass(ctor, props, options) {
-            // Copy the properties to the prototype of the class.
-            var proto = ctor.prototype,
-                _super = ctor.superclass.prototype,
-                noOverrided = options && options.noOverrided,
-                overrides = options && options.overrides || {};
-
-            for (var name in props) {
-                if (name === "constructor") {
-                    continue;
-                }
-
-                // Check if we're overwriting an existing function
-                var prop = props[name];
-                if (typeof props[name] == "function") {
-                    proto[name] =  !prop._constructor && !noOverrided && typeof _super[name] == "function" ?
-                          (function(name, fn, superFn) {
-                            return function() {
-                                var tmp = this.overrided;
-
-                                // Add a new ._super() method that is the same method
-                                // but on the super-class
-                                this.overrided = superFn;
-
-                                // The method only need to be bound temporarily, so we
-                                // remove it when we're done executing
-                                var ret = fn.apply(this, arguments);
-
-                                this.overrided = tmp;
-
-                                return ret;
-                            };
-                        })(name, prop, _super[name]) :
-                        prop;
-                } else if (types.isPlainObject(prop) && prop!==null && (prop.get)) {
-                    Object.defineProperty(proto,name,prop);
-                } else {
-                    proto[name] = prop;
-                }
-            }
-            return ctor;
-        }
-
-        function serialMixins(ctor,mixins) {
-            var result = [];
-
-            mixins.forEach(function(mixin){
-                if (has(mixin,"__mixins__")) {
-                     throw new Error("nested mixins");
-                }
-                var clss = [];
-                while (mixin) {
-                    clss.unshift(mixin);
-                    mixin = mixin.superclass;
-                }
-                result = result.concat(clss);
-            });
-
-            result = uniq(result);
-
-            result = result.filter(function(mixin){
-                var cls = ctor;
-                while (cls) {
-                    if (mixin === cls) {
-                        return false;
-                    }
-                    if (has(cls,"__mixins__")) {
-                        var clsMixines = cls["__mixins__"];
-                        for (var i=0; i<clsMixines.length;i++) {
-                            if (clsMixines[i]===mixin) {
-                                return false;
-                            }
-                        }
-                    }
-                    cls = cls.superclass;
-                }
-                return true;
-            });
-
-            if (result.length>0) {
-                return result;
-            } else {
-                return false;
-            }
-        }
-
-        function mergeMixins(ctor,mixins) {
-            var newCtor =ctor;
-            for (var i=0;i<mixins.length;i++) {
-                var xtor = new Function();
-
-                inherit(xtor,newCtor)
-                //xtor.prototype = Object.create(newCtor.prototype);
-                //xtor.__proto__ = newCtor;
-                xtor.superclass = null;
-                mixin(xtor.prototype,mixins[i].prototype);
-                xtor.prototype.__mixin__ = mixins[i];
-                newCtor = xtor;
-            }
-
-            return newCtor;
-        }
-
-        function _constructor ()  {
-            if (this._construct) {
-                return this._construct.apply(this, arguments);
-            } else  if (this.init) {
-                return this.init.apply(this, arguments);
-            }
-        }
-
-        return function createClass(props, parent, mixins,options) {
-            if (isArray(parent)) {
-                options = mixins;
-                mixins = parent;
-                parent = null;
-            }
-            parent = parent || Object;
-
-            if (isDefined(mixins) && !isArray(mixins)) {
-                options = mixins;
-                mixins = false;
-            }
-
-            var innerParent = parent;
-
-            if (mixins) {
-                mixins = serialMixins(innerParent,mixins);
-            }
-
-            if (mixins) {
-                innerParent = mergeMixins(innerParent,mixins);
-            }
-
-            var klassName = props.klassName || "",
-                ctor = new Function(
-                    "return function " + klassName + "() {" +
-                    "var inst = this," +
-                    " ctor = arguments.callee;" +
-                    "if (!(inst instanceof ctor)) {" +
-                    "inst = Object.create(ctor.prototype);" +
-                    "}" +
-                    "return ctor._constructor.apply(inst, arguments) || inst;" + 
-                    "}"
-                )();
-
-
-            // Populate our constructed prototype object
-            ///ctor.prototype = Object.create(innerParent.prototype);
-
-            // Enforce the constructor to be what we expect
-            ///ctor.prototype.constructor = ctor;
-  
-            // And make this class extendable
-            ///ctor.__proto__ = innerParent;
-
-            inherit(ctor,innerParent);
-
-            ctor.superclass = parent;
-
-            if (!ctor._constructor) {
-                ctor._constructor = _constructor;
-            } 
-
-            if (mixins) {
-                ctor.__mixins__ = mixins;
-            }
-
-            if (!ctor.partial) {
-                ctor.partial = function(props, options) {
-                    return extendClass(this, props, options);
-                };
-            }
-            if (!ctor.inherit) {
-                ctor.inherit = function(props, mixins,options) {
-                    return createClass(props, this, mixins,options);
-                };
-            }
-
-            ctor.partial(props, options);
-
-            return ctor;
-        };
-    }
-
-    var createClass = f1();
-
-    return constructs.klass = createClass;
+define('skylark-langx-async/main',[
+	"./async"
+],function(async){
+	return async;
 });
-define('skylark-langx-klass/klass',[
+define('skylark-langx-async', ['skylark-langx-async/main'], function (main) { return main; });
+
+define('skylark-langx/async',[
+    "skylark-langx-async"
+],function(async){
+    return async;
+});
+define('skylark-langx-binary/binary',[
   "skylark-langx-ns",
-  "skylark-langx-constructs/klass"
-],function(skylark,klass){
+],function(skylark){
+	"use strict";
 
 
-    return skylark.attach("langx.klass",klass);
+	/**
+	 * Create arraybuffer from binary string
+	 *
+	 * @method fromBinaryString
+	 * @param {String} str
+	 * @return {Arraybuffer} data
+	 */
+	function fromBinaryString(str) {
+		var length = str.length;
+		var arraybuffer = new ArrayBuffer(length);
+		var view = new Uint8Array(arraybuffer);
+
+		for(var i = 0; i < length; i++)
+		{
+			view[i] = str.charCodeAt(i);
+		}
+
+		return arraybuffer;
+	}
+
+	/**
+	 * Create arraybuffer from base64 string
+	 *
+	 * @method fromBase64
+	 * @param {String} base64
+	 * @return {Arraybuffer} data
+	 */
+	function fromBase64(str){
+		var encoding = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+		var length = str.length / 4 * 3;
+		var arraybuffer = new ArrayBuffer(length);
+		var view = new Uint8Array(arraybuffer);
+
+		var a, b, c, d;
+
+		for(var i = 0, j = 0; i < length; i += 3)
+		{
+			a = encoding.indexOf(str.charAt(j++));
+			b = encoding.indexOf(str.charAt(j++));
+			c = encoding.indexOf(str.charAt(j++));
+			d = encoding.indexOf(str.charAt(j++));
+
+			view[i] = (a << 2) | (b >> 4);
+			if(c !== 64)
+			{
+				view[i+1] = ((b & 15) << 4) | (c >> 2);
+			}
+			if(d !== 64)
+			{
+				view[i+2] = ((c & 3) << 6) | d;
+			}
+		}
+
+		return arraybuffer;
+	}
+
+	/**
+	 * Create arraybuffer from Nodejs buffer
+	 *
+	 * @method fromBuffer
+	 * @param {Buffer} buffer
+	 * @return {Arraybuffer} data
+	 */
+	function fromBuffer(buffer)	{
+		var array = new ArrayBuffer(buffer.length);
+		var view = new Uint8Array(array);
+
+		for(var i = 0; i < buffer.length; i++)
+		{
+			view[i] = buffer[i];
+		}
+
+		return array;
+
+		//Faster but the results is failing the "instanceof ArrayBuffer" test
+		//return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+	};
+
+	return skylark.attach("langx.binary",{
+		fromBase64,
+		fromBinaryString,
+		fromBuffer
+	});
 });
-define('skylark-langx-klass/main',[
+define('skylark-langx-binary/main',[
+	"./binary"
+],function(binary){
+	return binary;
+});
+define('skylark-langx-binary', ['skylark-langx-binary/main'], function (main) { return main; });
+
+define('skylark-langx/binary',[
+	"skylark-langx-binary"
+],function(binary){
+  return binary;
+});
+define('skylark-langx-constructs/main',[
+	"./constructs",
+	"./inherit",
 	"./klass"
-],function(klass){
-	return klass;
+],function(constructs){
+	return constructs;
 });
-define('skylark-langx-klass', ['skylark-langx-klass/main'], function (main) { return main; });
+define('skylark-langx-constructs', ['skylark-langx-constructs/main'], function (main) { return main; });
 
+define('skylark-langx/constructs',[
+	"skylark-langx-constructs"
+],function(constructs){
+  return constructs;
+});
+define('skylark-langx-datetimes/datetimes',[
+    "skylark-langx-ns"
+],function(skylark){
+     function parseMilliSeconds(str) {
+
+        var strs = str.split(' ');
+        var number = parseInt(strs[0]);
+
+        if (isNaN(number)){
+            return 0;
+        }
+
+        var min = 60000 * 60;
+
+        switch (strs[1].trim().replace(/\./g, '')) {
+            case 'minutes':
+            case 'minute':
+            case 'min':
+            case 'mm':
+            case 'm':
+                return 60000 * number;
+            case 'hours':
+            case 'hour':
+            case 'HH':
+            case 'hh':
+            case 'h':
+            case 'H':
+                return min * number;
+            case 'seconds':
+            case 'second':
+            case 'sec':
+            case 'ss':
+            case 's':
+                return 1000 * number;
+            case 'days':
+            case 'day':
+            case 'DD':
+            case 'dd':
+            case 'd':
+                return (min * 24) * number;
+            case 'months':
+            case 'month':
+            case 'MM':
+            case 'M':
+                return (min * 24 * 28) * number;
+            case 'weeks':
+            case 'week':
+            case 'W':
+            case 'w':
+                return (min * 24 * 7) * number;
+            case 'years':
+            case 'year':
+            case 'yyyy':
+            case 'yy':
+            case 'y':
+                return (min * 24 * 365) * number;
+            default:
+                return 0;
+        }
+    };
+	
+	return skylark.attach("langx.datetimes",{
+		parseMilliSeconds
+	});
+});
+define('skylark-langx-datetimes/main',[
+	"./datetimes"
+],function(datetimes){
+	return datetimes;
+});
+define('skylark-langx-datetimes', ['skylark-langx-datetimes/main'], function (main) { return main; });
+
+define('skylark-langx/datetimes',[
+    "skylark-langx-datetimes"
+],function(datetimes){
+    return datetimes;
+});
+define('skylark-langx/Deferred',[
+    "skylark-langx-async"
+],function(async){
+    return async.Deferred;
+});
 define('skylark-langx-events/events',[
 	"skylark-langx-ns"
 ],function(skylark){
@@ -2637,1058 +3695,6 @@ define('skylark-langx-events/Emitter',[
 
     return events.Emitter = Emitter;
 
-});
-define('skylark-langx/skylark',[
-    "skylark-langx-ns"
-], function(ns) {
-	return ns;
-});
-
-define('skylark-langx/arrays',[
-	"skylark-langx-arrays"
-],function(arrays){
-  return arrays;
-});
-define('skylark-langx/klass',[
-    "skylark-langx-klass"
-],function(klass){
-    return klass;
-});
-define('skylark-langx/ArrayStore',[
-    "./klass"
-],function(klass){
-    var SimpleQueryEngine = function(query, options){
-        // summary:
-        //      Simple query engine that matches using filter functions, named filter
-        //      functions or objects by name-value on a query object hash
-        //
-        // description:
-        //      The SimpleQueryEngine provides a way of getting a QueryResults through
-        //      the use of a simple object hash as a filter.  The hash will be used to
-        //      match properties on data objects with the corresponding value given. In
-        //      other words, only exact matches will be returned.
-        //
-        //      This function can be used as a template for more complex query engines;
-        //      for example, an engine can be created that accepts an object hash that
-        //      contains filtering functions, or a string that gets evaluated, etc.
-        //
-        //      When creating a new dojo.store, simply set the store's queryEngine
-        //      field as a reference to this function.
-        //
-        // query: Object
-        //      An object hash with fields that may match fields of items in the store.
-        //      Values in the hash will be compared by normal == operator, but regular expressions
-        //      or any object that provides a test() method are also supported and can be
-        //      used to match strings by more complex expressions
-        //      (and then the regex's or object's test() method will be used to match values).
-        //
-        // options: dojo/store/api/Store.QueryOptions?
-        //      An object that contains optional information such as sort, start, and count.
-        //
-        // returns: Function
-        //      A function that caches the passed query under the field "matches".  See any
-        //      of the "query" methods on dojo.stores.
-        //
-        // example:
-        //      Define a store with a reference to this engine, and set up a query method.
-        //
-        //  |   var myStore = function(options){
-        //  |       //  ...more properties here
-        //  |       this.queryEngine = SimpleQueryEngine;
-        //  |       //  define our query method
-        //  |       this.query = function(query, options){
-        //  |           return QueryResults(this.queryEngine(query, options)(this.data));
-        //  |       };
-        //  |   };
-
-        // create our matching query function
-        switch(typeof query){
-            default:
-                throw new Error("Can not query with a " + typeof query);
-            case "object": case "undefined":
-                var queryObject = query;
-                query = function(object){
-                    for(var key in queryObject){
-                        var required = queryObject[key];
-                        if(required && required.test){
-                            // an object can provide a test method, which makes it work with regex
-                            if(!required.test(object[key], object)){
-                                return false;
-                            }
-                        }else if(required != object[key]){
-                            return false;
-                        }
-                    }
-                    return true;
-                };
-                break;
-            case "string":
-                // named query
-                if(!this[query]){
-                    throw new Error("No filter function " + query + " was found in store");
-                }
-                query = this[query];
-                // fall through
-            case "function":
-                // fall through
-        }
-        
-        function filter(arr, callback, thisObject){
-            // summary:
-            //      Returns a new Array with those items from arr that match the
-            //      condition implemented by callback.
-            // arr: Array
-            //      the array to iterate over.
-            // callback: Function|String
-            //      a function that is invoked with three arguments (item,
-            //      index, array). The return of this function is expected to
-            //      be a boolean which determines whether the passed-in item
-            //      will be included in the returned array.
-            // thisObject: Object?
-            //      may be used to scope the call to callback
-            // returns: Array
-            // description:
-            //      This function corresponds to the JavaScript 1.6 Array.filter() method, with one difference: when
-            //      run over sparse arrays, this implementation passes the "holes" in the sparse array to
-            //      the callback function with a value of undefined. JavaScript 1.6's filter skips the holes in the sparse array.
-            //      For more details, see:
-            //      https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/filter
-            // example:
-            //  | // returns [2, 3, 4]
-            //  | array.filter([1, 2, 3, 4], function(item){ return item>1; });
-
-            // TODO: do we need "Ctr" here like in map()?
-            var i = 0, l = arr && arr.length || 0, out = [], value;
-            if(l && typeof arr == "string") arr = arr.split("");
-            if(typeof callback == "string") callback = cache[callback] || buildFn(callback);
-            if(thisObject){
-                for(; i < l; ++i){
-                    value = arr[i];
-                    if(callback.call(thisObject, value, i, arr)){
-                        out.push(value);
-                    }
-                }
-            }else{
-                for(; i < l; ++i){
-                    value = arr[i];
-                    if(callback(value, i, arr)){
-                        out.push(value);
-                    }
-                }
-            }
-            return out; // Array
-        }
-
-        function execute(array){
-            // execute the whole query, first we filter
-            var results = filter(array, query);
-            // next we sort
-            var sortSet = options && options.sort;
-            if(sortSet){
-                results.sort(typeof sortSet == "function" ? sortSet : function(a, b){
-                    for(var sort, i=0; sort = sortSet[i]; i++){
-                        var aValue = a[sort.attribute];
-                        var bValue = b[sort.attribute];
-                        // valueOf enables proper comparison of dates
-                        aValue = aValue != null ? aValue.valueOf() : aValue;
-                        bValue = bValue != null ? bValue.valueOf() : bValue;
-                        if (aValue != bValue){
-                            // modified by lwf 2016/07/09
-                            //return !!sort.descending == (aValue == null || aValue > bValue) ? -1 : 1;
-                            return !!sort.descending == (aValue == null || aValue > bValue) ? -1 : 1;
-                        }
-                    }
-                    return 0;
-                });
-            }
-            // now we paginate
-            if(options && (options.start || options.count)){
-                var total = results.length;
-                results = results.slice(options.start || 0, (options.start || 0) + (options.count || Infinity));
-                results.total = total;
-            }
-            return results;
-        }
-        execute.matches = query;
-        return execute;
-    };
-
-    var QueryResults = function(results){
-        // summary:
-        //      A function that wraps the results of a store query with additional
-        //      methods.
-        // description:
-        //      QueryResults is a basic wrapper that allows for array-like iteration
-        //      over any kind of returned data from a query.  While the simplest store
-        //      will return a plain array of data, other stores may return deferreds or
-        //      promises; this wrapper makes sure that *all* results can be treated
-        //      the same.
-        //
-        //      Additional methods include `forEach`, `filter` and `map`.
-        // results: Array|dojo/promise/Promise
-        //      The result set as an array, or a promise for an array.
-        // returns:
-        //      An array-like object that can be used for iterating over.
-        // example:
-        //      Query a store and iterate over the results.
-        //
-        //  |   store.query({ prime: true }).forEach(function(item){
-        //  |       //  do something
-        //  |   });
-
-        if(!results){
-            return results;
-        }
-
-        var isPromise = !!results.then;
-        // if it is a promise it may be frozen
-        if(isPromise){
-            results = Object.delegate(results);
-        }
-        function addIterativeMethod(method){
-            // Always add the iterative methods so a QueryResults is
-            // returned whether the environment is ES3 or ES5
-            results[method] = function(){
-                var args = arguments;
-                var result = Deferred.when(results, function(results){
-                    //Array.prototype.unshift.call(args, results);
-                    return QueryResults(Array.prototype[method].apply(results, args));
-                });
-                // forEach should only return the result of when()
-                // when we're wrapping a promise
-                if(method !== "forEach" || isPromise){
-                    return result;
-                }
-            };
-        }
-
-        addIterativeMethod("forEach");
-        addIterativeMethod("filter");
-        addIterativeMethod("map");
-        if(results.total == null){
-            results.total = Deferred.when(results, function(results){
-                return results.length;
-            });
-        }
-        return results; // Object
-    };
-
-    var ArrayStore = klass({
-        "klassName": "ArrayStore",
-
-        "queryEngine": SimpleQueryEngine,
-        
-        "idProperty": "id",
-
-
-        get: function(id){
-            // summary:
-            //      Retrieves an object by its identity
-            // id: Number
-            //      The identity to use to lookup the object
-            // returns: Object
-            //      The object in the store that matches the given id.
-            return this.data[this.index[id]];
-        },
-
-        getIdentity: function(object){
-            return object[this.idProperty];
-        },
-
-        put: function(object, options){
-            var data = this.data,
-                index = this.index,
-                idProperty = this.idProperty;
-            var id = object[idProperty] = (options && "id" in options) ? options.id : idProperty in object ? object[idProperty] : Math.random();
-            if(id in index){
-                // object exists
-                if(options && options.overwrite === false){
-                    throw new Error("Object already exists");
-                }
-                // replace the entry in data
-                data[index[id]] = object;
-            }else{
-                // add the new object
-                index[id] = data.push(object) - 1;
-            }
-            return id;
-        },
-
-        add: function(object, options){
-            (options = options || {}).overwrite = false;
-            // call put with overwrite being false
-            return this.put(object, options);
-        },
-
-        remove: function(id){
-            // summary:
-            //      Deletes an object by its identity
-            // id: Number
-            //      The identity to use to delete the object
-            // returns: Boolean
-            //      Returns true if an object was removed, falsy (undefined) if no object matched the id
-            var index = this.index;
-            var data = this.data;
-            if(id in index){
-                data.splice(index[id], 1);
-                // now we have to reindex
-                this.setData(data);
-                return true;
-            }
-        },
-        query: function(query, options){
-            // summary:
-            //      Queries the store for objects.
-            // query: Object
-            //      The query to use for retrieving objects from the store.
-            // options: dojo/store/api/Store.QueryOptions?
-            //      The optional arguments to apply to the resultset.
-            // returns: dojo/store/api/Store.QueryResults
-            //      The results of the query, extended with iterative methods.
-            //
-            // example:
-            //      Given the following store:
-            //
-            //  |   var store = new Memory({
-            //  |       data: [
-            //  |           {id: 1, name: "one", prime: false },
-            //  |           {id: 2, name: "two", even: true, prime: true},
-            //  |           {id: 3, name: "three", prime: true},
-            //  |           {id: 4, name: "four", even: true, prime: false},
-            //  |           {id: 5, name: "five", prime: true}
-            //  |       ]
-            //  |   });
-            //
-            //  ...find all items where "prime" is true:
-            //
-            //  |   var results = store.query({ prime: true });
-            //
-            //  ...or find all items where "even" is true:
-            //
-            //  |   var results = store.query({ even: true });
-            return QueryResults(this.queryEngine(query, options)(this.data));
-        },
-
-        setData: function(data){
-            // summary:
-            //      Sets the given data as the source for this store, and indexes it
-            // data: Object[]
-            //      An array of objects to use as the source of data.
-            if(data.items){
-                // just for convenience with the data format IFRS expects
-                this.idProperty = data.identifier || this.idProperty;
-                data = this.data = data.items;
-            }else{
-                this.data = data;
-            }
-            this.index = {};
-            for(var i = 0, l = data.length; i < l; i++){
-                this.index[data[i][this.idProperty]] = i;
-            }
-        },
-
-        init: function(options) {
-            for(var i in options){
-                this[i] = options[i];
-            }
-            this.setData(this.data || []);
-        }
-
-    });
-
-	return ArrayStore;
-});
-define('skylark-langx-aspect/aspect',[
-    "skylark-langx-ns"
-],function(skylark){
-
-  var undefined, nextId = 0;
-    function advise(dispatcher, type, advice, receiveArguments){
-        var previous = dispatcher[type];
-        var around = type == "around";
-        var signal;
-        if(around){
-            var advised = advice(function(){
-                return previous.advice(this, arguments);
-            });
-            signal = {
-                remove: function(){
-                    if(advised){
-                        advised = dispatcher = advice = null;
-                    }
-                },
-                advice: function(target, args){
-                    return advised ?
-                        advised.apply(target, args) :  // called the advised function
-                        previous.advice(target, args); // cancelled, skip to next one
-                }
-            };
-        }else{
-            // create the remove handler
-            signal = {
-                remove: function(){
-                    if(signal.advice){
-                        var previous = signal.previous;
-                        var next = signal.next;
-                        if(!next && !previous){
-                            delete dispatcher[type];
-                        }else{
-                            if(previous){
-                                previous.next = next;
-                            }else{
-                                dispatcher[type] = next;
-                            }
-                            if(next){
-                                next.previous = previous;
-                            }
-                        }
-
-                        // remove the advice to signal that this signal has been removed
-                        dispatcher = advice = signal.advice = null;
-                    }
-                },
-                id: nextId++,
-                advice: advice,
-                receiveArguments: receiveArguments
-            };
-        }
-        if(previous && !around){
-            if(type == "after"){
-                // add the listener to the end of the list
-                // note that we had to change this loop a little bit to workaround a bizarre IE10 JIT bug
-                while(previous.next && (previous = previous.next)){}
-                previous.next = signal;
-                signal.previous = previous;
-            }else if(type == "before"){
-                // add to beginning
-                dispatcher[type] = signal;
-                signal.next = previous;
-                previous.previous = signal;
-            }
-        }else{
-            // around or first one just replaces
-            dispatcher[type] = signal;
-        }
-        return signal;
-    }
-    function aspect(type){
-        return function(target, methodName, advice, receiveArguments){
-            var existing = target[methodName], dispatcher;
-            if(!existing || existing.target != target){
-                // no dispatcher in place
-                target[methodName] = dispatcher = function(){
-                    var executionId = nextId;
-                    // before advice
-                    var args = arguments;
-                    var before = dispatcher.before;
-                    while(before){
-                        args = before.advice.apply(this, args) || args;
-                        before = before.next;
-                    }
-                    // around advice
-                    if(dispatcher.around){
-                        var results = dispatcher.around.advice(this, args);
-                    }
-                    // after advice
-                    var after = dispatcher.after;
-                    while(after && after.id < executionId){
-                        if(after.receiveArguments){
-                            var newResults = after.advice.apply(this, args);
-                            // change the return value only if a new value was returned
-                            results = newResults === undefined ? results : newResults;
-                        }else{
-                            results = after.advice.call(this, results, args);
-                        }
-                        after = after.next;
-                    }
-                    return results;
-                };
-                if(existing){
-                    dispatcher.around = {advice: function(target, args){
-                        return existing.apply(target, args);
-                    }};
-                }
-                dispatcher.target = target;
-            }
-            var results = advise((dispatcher || existing), type, advice, receiveArguments);
-            advice = null;
-            return results;
-        };
-    }
-
-    return skylark.attach("langx.aspect",{
-        after: aspect("after"),
- 
-        around: aspect("around"),
-        
-        before: aspect("before")
-    });
-});
-define('skylark-langx-aspect/main',[
-	"./aspect"
-],function(aspect){
-	return aspect;
-});
-define('skylark-langx-aspect', ['skylark-langx-aspect/main'], function (main) { return main; });
-
-define('skylark-langx/aspect',[
-    "skylark-langx-aspect"
-],function(aspect){
-  return aspect;
-});
-define('skylark-langx-async/Deferred',[
-    "skylark-langx-arrays",
-	"skylark-langx-funcs",
-    "skylark-langx-objects"
-],function(arrays,funcs,objects){
-    "use strict";
-
-    var slice = Array.prototype.slice,
-        proxy = funcs.proxy,
-        makeArray = arrays.makeArray,
-        result = objects.result,
-        mixin = objects.mixin;
-
-    mixin(Promise.prototype,{
-        always: function(handler) {
-            //this.done(handler);
-            //this.fail(handler);
-            this.then(handler,handler);
-            return this;
-        },
-        done : function() {
-            for (var i = 0;i<arguments.length;i++) {
-                this.then(arguments[i]);
-            }
-            return this;
-        },
-        fail : function(handler) { 
-            //return mixin(Promise.prototype.catch.call(this,handler),added);
-            //return this.then(null,handler);
-            this.catch(handler);
-            return this;
-         }
-    });
-
-
-    var Deferred = function() {
-        var self = this,
-            p = this.promise = makePromise2(new Promise(function(resolve, reject) {
-                self._resolve = resolve;
-                self._reject = reject;
-            }));
-
-        //wrapPromise(p,self);
-
-        //this[PGLISTENERS] = [];
-        //this[PGNOTIFIES] = [];
-
-        //this.resolve = Deferred.prototype.resolve.bind(this);
-        //this.reject = Deferred.prototype.reject.bind(this);
-        //this.progress = Deferred.prototype.progress.bind(this);
-
-    };
-
-   
-    function makePromise2(promise) {
-        // Don't modify any promise that has been already modified.
-        if (promise.isResolved) return promise;
-
-        // Set initial state
-        var isPending = true;
-        var isRejected = false;
-        var isResolved = false;
-
-        // Observe the promise, saving the fulfillment in a closure scope.
-        var result = promise.then(
-            function(v) {
-                isResolved = true;
-                isPending = false;
-                return v; 
-            }, 
-            function(e) {
-                isRejected = true;
-                isPending = false;
-                throw e; 
-            }
-        );
-
-        result.isResolved = function() { return isResolved; };
-        result.isPending = function() { return isPending; };
-        result.isRejected = function() { return isRejected; };
-
-        result.state = function() {
-            if (isResolved) {
-                return 'resolved';
-            }
-            if (isRejected) {
-                return 'rejected';
-            }
-            return 'pending';
-        };
-
-        var notified = [],
-            listeners = [];
-
-          
-        result.then = function(onResolved,onRejected,onProgress) {
-            if (onProgress) {
-                this.progress(onProgress);
-            }
-            return makePromise2(Promise.prototype.then.call(this,
-                onResolved && function(args) {
-                    if (args && args.__ctx__ !== undefined) {
-                        return onResolved.apply(args.__ctx__,args);
-                    } else {
-                        return onResolved(args);
-                    }
-                },
-                onRejected && function(args){
-                    if (args && args.__ctx__ !== undefined) {
-                        return onRejected.apply(args.__ctx__,args);
-                    } else {
-                        return onRejected(args);
-                    }
-                }
-            ));
-        };
-
-        result.progress = function(handler) {
-            notified.forEach(function (value) {
-                handler(value);
-            });
-            listeners.push(handler);
-            return this;
-        };
-
-        result.pipe = result.then;
-
-        result.notify = function(value) {
-            try {
-                notified.push(value);
-
-                return listeners.forEach(function (listener) {
-                    return listener(value);
-                });
-            } catch (error) {
-            this.reject(error);
-            }
-            return this;
-        };
-
-        return result;
-    }
-
- 
-    Deferred.prototype.resolve = function(value) {
-        var args = slice.call(arguments);
-        return this.resolveWith(null,args);
-    };
-
-    Deferred.prototype.resolveWith = function(context,args) {
-        args = args ? makeArray(args) : []; 
-        args.__ctx__ = context;
-        this._resolve(args);
-        this._resolved = true;
-        return this;
-    };
-
-    Deferred.prototype.notify = function(value) {
-        var p = result(this,"promise");
-        p.notify(value);
-        return this;
-    };
-
-    Deferred.prototype.reject = function(reason) {
-        var args = slice.call(arguments);
-        return this.rejectWith(null,args);
-    };
-
-    Deferred.prototype.rejectWith = function(context,args) {
-        args = args ? makeArray(args) : []; 
-        args.__ctx__ = context;
-        this._reject(args);
-        this._rejected = true;
-        return this;
-    };
-
-    Deferred.prototype.isResolved = function() {
-        var p = result(this,"promise");
-        return p.isResolved();
-    };
-
-    Deferred.prototype.isRejected = function() {
-        var p = result(this,"promise");
-        return p.isRejected();
-    };
-
-    Deferred.prototype.state = function() {
-        var p = result(this,"promise");
-        return p.state();
-    };
-
-    Deferred.prototype.then = function(callback, errback, progback) {
-        var p = result(this,"promise");
-        return p.then(callback, errback, progback);
-    };
-
-    Deferred.prototype.progress = function(progback){
-        var p = result(this,"promise");
-        return p.progress(progback);
-    };
-   
-    Deferred.prototype.catch = function(errback) {
-        var p = result(this,"promise");
-        return p.catch(errback);
-    };
-
-
-    Deferred.prototype.always  = function() {
-        var p = result(this,"promise");
-        p.always.apply(p,arguments);
-        return this;
-    };
-
-    Deferred.prototype.done  = function() {
-        var p = result(this,"promise");
-        p.done.apply(p,arguments);
-        return this;
-    };
-
-    Deferred.prototype.fail = function(errback) {
-        var p = result(this,"promise");
-        p.fail(errback);
-        return this;
-    };
-
-
-    Deferred.all = function(array) {
-        //return wrapPromise(Promise.all(array));
-        var d = new Deferred();
-        Promise.all(array).then(d.resolve.bind(d),d.reject.bind(d));
-        return result(d,"promise");
-    };
-
-    Deferred.first = function(array) {
-        return makePromise2(Promise.race(array));
-    };
-
-
-    Deferred.when = function(valueOrPromise, callback, errback, progback) {
-        var receivedPromise = valueOrPromise && typeof valueOrPromise.then === "function";
-        var nativePromise = receivedPromise && valueOrPromise instanceof Promise;
-
-        if (!receivedPromise) {
-            if (arguments.length > 1) {
-                return callback ? callback(valueOrPromise) : valueOrPromise;
-            } else {
-                return new Deferred().resolve(valueOrPromise);
-            }
-        } else if (!nativePromise) {
-            var deferred = new Deferred(valueOrPromise.cancel);
-            valueOrPromise.then(proxy(deferred.resolve,deferred), proxy(deferred.reject,deferred), deferred.notify);
-            valueOrPromise = deferred.promise;
-        }
-
-        if (callback || errback || progback) {
-            return valueOrPromise.then(callback, errback, progback);
-        }
-        return valueOrPromise;
-    };
-
-    Deferred.reject = function(err) {
-        var d = new Deferred();
-        d.reject(err);
-        return d.promise;
-    };
-
-    Deferred.resolve = function(data) {
-        var d = new Deferred();
-        d.resolve.apply(d,arguments);
-        return d.promise;
-    };
-
-    Deferred.immediate = Deferred.resolve;
-
-
-    Deferred.promise = function(callback) {
-        var d = new Deferred();
-
-        callback(d.resolve.bind(d),d.reject.bind(d),d.progress.bind(d));
-
-        return d.promise;
-    };
-
-    return Deferred;
-});
-define('skylark-langx-async/async',[
-    "skylark-langx-ns",
-    "skylark-langx-objects",
-    "./Deferred"
-],function(skylark,objects,Deferred){
-    var each = objects.each;
-    
-    var async = {
-        Deferred : Deferred,
-
-        parallel : function(arr,args,ctx) {
-            var rets = [];
-            ctx = ctx || null;
-            args = args || [];
-
-            each(arr,function(i,func){
-                rets.push(func.apply(ctx,args));
-            });
-
-            return Deferred.all(rets);
-        },
-
-        series : function(arr,args,ctx) {
-            var rets = [],
-                d = new Deferred(),
-                p = d.promise;
-
-            ctx = ctx || null;
-            args = args || [];
-
-            d.resolve();
-            each(arr,function(i,func){
-                p = p.then(function(){
-                    return func.apply(ctx,args);
-                });
-                rets.push(p);
-            });
-
-            return Deferred.all(rets);
-        },
-
-        waterful : function(arr,args,ctx) {
-            var d = new Deferred(),
-                p = d.promise;
-
-            ctx = ctx || null;
-            args = args || [];
-
-            d.resolveWith(ctx,args);
-
-            each(arr,function(i,func){
-                p = p.then(func);
-            });
-            return p;
-        }
-    };
-
-	return skylark.attach("langx.async",async);	
-});
-define('skylark-langx-async/main',[
-	"./async"
-],function(async){
-	return async;
-});
-define('skylark-langx-async', ['skylark-langx-async/main'], function (main) { return main; });
-
-define('skylark-langx/async',[
-    "skylark-langx-async"
-],function(async){
-    return async;
-});
-define('skylark-langx-binary/binary',[
-  "skylark-langx-ns",
-],function(skylark){
-	"use strict";
-
-
-	/**
-	 * Create arraybuffer from binary string
-	 *
-	 * @method fromBinaryString
-	 * @param {String} str
-	 * @return {Arraybuffer} data
-	 */
-	function fromBinaryString(str) {
-		var length = str.length;
-		var arraybuffer = new ArrayBuffer(length);
-		var view = new Uint8Array(arraybuffer);
-
-		for(var i = 0; i < length; i++)
-		{
-			view[i] = str.charCodeAt(i);
-		}
-
-		return arraybuffer;
-	}
-
-	/**
-	 * Create arraybuffer from base64 string
-	 *
-	 * @method fromBase64
-	 * @param {String} base64
-	 * @return {Arraybuffer} data
-	 */
-	function fromBase64(str){
-		var encoding = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-		var length = str.length / 4 * 3;
-		var arraybuffer = new ArrayBuffer(length);
-		var view = new Uint8Array(arraybuffer);
-
-		var a, b, c, d;
-
-		for(var i = 0, j = 0; i < length; i += 3)
-		{
-			a = encoding.indexOf(str.charAt(j++));
-			b = encoding.indexOf(str.charAt(j++));
-			c = encoding.indexOf(str.charAt(j++));
-			d = encoding.indexOf(str.charAt(j++));
-
-			view[i] = (a << 2) | (b >> 4);
-			if(c !== 64)
-			{
-				view[i+1] = ((b & 15) << 4) | (c >> 2);
-			}
-			if(d !== 64)
-			{
-				view[i+2] = ((c & 3) << 6) | d;
-			}
-		}
-
-		return arraybuffer;
-	}
-
-	/**
-	 * Create arraybuffer from Nodejs buffer
-	 *
-	 * @method fromBuffer
-	 * @param {Buffer} buffer
-	 * @return {Arraybuffer} data
-	 */
-	function fromBuffer(buffer)	{
-		var array = new ArrayBuffer(buffer.length);
-		var view = new Uint8Array(array);
-
-		for(var i = 0; i < buffer.length; i++)
-		{
-			view[i] = buffer[i];
-		}
-
-		return array;
-
-		//Faster but the results is failing the "instanceof ArrayBuffer" test
-		//return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-	};
-
-	return skylark.attach("langx.binary",{
-		fromBase64,
-		fromBinaryString,
-		fromBuffer
-	});
-});
-define('skylark-langx-binary/main',[
-	"./binary"
-],function(binary){
-	return binary;
-});
-define('skylark-langx-binary', ['skylark-langx-binary/main'], function (main) { return main; });
-
-define('skylark-langx/binary',[
-	"skylark-langx-binary"
-],function(binary){
-  return binary;
-});
-define('skylark-langx-constructs/main',[
-	"./constructs",
-	"./inherit",
-	"./klass"
-],function(constructs){
-	return constructs;
-});
-define('skylark-langx-constructs', ['skylark-langx-constructs/main'], function (main) { return main; });
-
-define('skylark-langx/constructs',[
-	"skylark-langx-constructs"
-],function(constructs){
-  return constructs;
-});
-define('skylark-langx-datetimes/datetimes',[
-    "skylark-langx-ns"
-],function(skylark){
-     function parseMilliSeconds(str) {
-
-        var strs = str.split(' ');
-        var number = parseInt(strs[0]);
-
-        if (isNaN(number)){
-            return 0;
-        }
-
-        var min = 60000 * 60;
-
-        switch (strs[1].trim().replace(/\./g, '')) {
-            case 'minutes':
-            case 'minute':
-            case 'min':
-            case 'mm':
-            case 'm':
-                return 60000 * number;
-            case 'hours':
-            case 'hour':
-            case 'HH':
-            case 'hh':
-            case 'h':
-            case 'H':
-                return min * number;
-            case 'seconds':
-            case 'second':
-            case 'sec':
-            case 'ss':
-            case 's':
-                return 1000 * number;
-            case 'days':
-            case 'day':
-            case 'DD':
-            case 'dd':
-            case 'd':
-                return (min * 24) * number;
-            case 'months':
-            case 'month':
-            case 'MM':
-            case 'M':
-                return (min * 24 * 28) * number;
-            case 'weeks':
-            case 'week':
-            case 'W':
-            case 'w':
-                return (min * 24 * 7) * number;
-            case 'years':
-            case 'year':
-            case 'yyyy':
-            case 'yy':
-            case 'y':
-                return (min * 24 * 365) * number;
-            default:
-                return 0;
-        }
-    };
-	
-	return skylark.attach("langx.datetimes",{
-		parseMilliSeconds
-	});
-});
-define('skylark-langx-datetimes/main',[
-	"./datetimes"
-],function(datetimes){
-	return datetimes;
-});
-define('skylark-langx-datetimes', ['skylark-langx-datetimes/main'], function (main) { return main; });
-
-define('skylark-langx/datetimes',[
-    "skylark-langx-datetimes"
-],function(datetimes){
-    return datetimes;
-});
-define('skylark-langx/Deferred',[
-    "skylark-langx-async"
-],function(async){
-    return async.Deferred;
 });
 define('skylark-langx-events/createEvent',[
 	"./events",
@@ -18539,12 +18545,6 @@ define('skylark-domx-plugins/main',[
 });
 define('skylark-domx-plugins', ['skylark-domx-plugins/main'], function (main) { return main; });
 
-define('skylark-domx-plugins-windows/windows',[
-	"skylark-domx-plugins"
-],function(plugins){
-	return plugins.windows = {
-	};
-});
 define('skylark-domx-interact/interact',[
     "skylark-langx/skylark",
     "skylark-langx/langx"
@@ -18724,7 +18724,7 @@ define('skylark-domx-interact/Movable',[
     return interact.Movable = Movable;
 });
 
-define('skylark-domx-plugins-windows/Window',[
+define('skylark-bootstrap-window/Window',[
   "skylark-langx/skylark",
   "skylark-langx/langx",
   "skylark-domx-browser",
@@ -19339,7 +19339,7 @@ define('skylark-domx-plugins-windows/Window',[
 
     return windows.Window = Window;
 });
-define('skylark-domx-plugins-windows/WindowManager',[
+define('skylark-bootstrap-window/WindowManager',[
   "skylark-langx/skylark",
   "skylark-langx/langx",
   "skylark-domx-browser",
@@ -19517,15 +19517,15 @@ define('skylark-domx-plugins-windows/WindowManager',[
 
     return windows.WindowManager = WindowManager;
 });
-define('skylark-domx-plugins-windows/main',[
+define('skylark-bootstrap-window/main',[
 	"./windows",
     "./Window",
     "./WindowManager"
 ], function(windows) {
     return windows;
 });
-define('skylark-domx-plugins-windows', ['skylark-domx-plugins-windows/main'], function (main) { return main; });
+define('skylark-bootstrap-window', ['skylark-bootstrap-window/main'], function (main) { return main; });
 
 
 },this);
-//# sourceMappingURL=sourcemaps/skylark-domx-plugins-windows-all.js.map
+//# sourceMappingURL=sourcemaps/skylark-bootstrap-window-all.js.map
